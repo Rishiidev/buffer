@@ -9,7 +9,7 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
 
-const HIDE_ON = new Set<string>(["/onboarding"]);
+const HIDE_ON = new Set<string>(["/onboarding", "/", "/timer", "/history"]);
 
 export function PwaInstaller() {
   const pathname = usePathname();
@@ -28,10 +28,11 @@ export function PwaInstaller() {
     return () => window.removeEventListener("beforeinstallprompt", handler);
   }, []);
 
-  // Hide on routes that have their own persistent fixed bottom CTAs to
-  // avoid visually stacking the install banner over onboarding / modals.
+  // Hide on routes that have their own persistent fixed bottom UI (onboarding,
+  // and all routes with the bottom navigation bar) to avoid visually stacking
+  // the install banner over the nav or onboarding CTAs.
   if (pathname && HIDE_ON.has(pathname)) return null;
-  // Also hide if bottom nav is visible (it has its own install affordance via OS)
+  if (!evt || dismissed) return null;
   // We keep it simple: only show on pages without bottom nav (onboarding, settings, etc)
   // Actually the bottom nav is hidden on onboarding, but shows on /, /timer, /history
   // So we only show the banner when bottom nav is NOT shown
