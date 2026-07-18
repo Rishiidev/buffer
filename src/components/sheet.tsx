@@ -83,20 +83,25 @@ export function Sheet({
         }}
         className="fixed inset-x-0 bottom-0 z-50 bg-elev1 rounded-t-3xl border-t border-border-soft max-h-[88vh] overflow-y-auto safe-bottom"
       >
+        {/* Drag handle ONLY on the small bar at the top — not the title area.
+            This prevents the drag handler from intercepting taps on inner buttons. */}
         <motion.div
-          className="sticky top-0 bg-elev1/95 backdrop-blur-md pt-3 pb-2 z-10"
-          drag={dismissible ? "y" : false}
-          dragConstraints={{ top: 0, bottom: 0 }}
-          dragElastic={{ top: 0, bottom: 0.6 }}
-          onDragEnd={handleDragEnd}
-          style={{
-            cursor: dismissible ? "grab" : "default",
-            touchAction: dismissible ? "pan-y" : "auto",
-          }}
+          className="sticky top-0 bg-elev1/95 backdrop-blur-md pt-3 pb-2 z-10 flex flex-col"
         >
-          <div className="w-10 h-1 bg-border rounded-full mx-auto" />
+          {/* Small drag handle — only this element is draggable */}
+          <motion.div
+            className="w-10 h-1 bg-border rounded-full mx-auto mb-2"
+            drag={dismissible ? "y" : false}
+            dragConstraints={{ top: 0, bottom: 0 }}
+            dragElastic={{ top: 0, bottom: 0.6 }}
+            onDragEnd={handleDragEnd}
+            style={{
+              cursor: dismissible ? "grab" : "default",
+              touchAction: dismissible ? "pan-y" : "auto",
+            }}
+          />
           {title && (
-            <div className="text-lg font-display font-semibold tracking-tight mt-3 px-5">
+            <div className="text-lg font-display font-semibold tracking-tight mt-1 px-5 mb-2">
               {title}
             </div>
           )}
