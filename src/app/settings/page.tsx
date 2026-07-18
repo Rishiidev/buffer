@@ -21,10 +21,12 @@ import {
 } from "@/lib/stores/data";
 import type { Exam, Session, Subject } from "@/lib/db/schema";
 import { toast } from "sonner";
-import { format, addDays, subDays } from "date-fns";
+import { format, addDays } from "date-fns";
+import { seedSampleData } from "@/lib/seed-sample";
 import { cn, uid } from "@/lib/utils";
 import { Sheet } from "@/components/sheet";
 import { Button } from "@/components/button";
+import { SettingsSkeleton } from "@/components/skeleton";
 import { haptic, notify } from "@/lib/haptics";
 
 const COLORS = [
@@ -46,7 +48,7 @@ export default function SettingsPage() {
   const router = useRouter();
   const [showExamModal, setShowExamModal] = useState(false);
 
-  if (!ready || !activeExam) return null;
+  if (!ready || !activeExam) return <SettingsSkeleton />;
 
   return (
     <div className="bg-app min-h-dvh pb-32">
@@ -564,43 +566,4 @@ function ExamEditSheet({
   );
 }
 
-// Sample-data seeder: builds a believable 14-day history so users can see
-// the dashboard light up immediately.
-async function seedSampleData() {
-  const state = useDataStore.getState();
-  const exam = state.exams[0] ?? null;
-  if (!exam) return;
-  const subjects = state.subjects.filter((s) => s.examId === exam.id);
-  if (subjects.length === 0) return;
-  const now = Date.now();
-  const sessions: Array<Omit<Session, "id">> = [];
-
-  // Skip the very latest day (today) so user still has a clean "start" feeling.
-  for (let d = 14; d >= 1; d--) {
-    const day = subDays(now, d);
-    const sessionsThatDay = d === 7 ? 0 : 2 + Math.floor(Math.random() * 2);
-    for (let i = 0; i < sessionsThatDay; i++) {
-      const subj = subjects[Math.floor(Math.random() * subjects.length)];
-      const startHour = 9 + Math.floor(Math.random() * 9);
-      const start = new Date(day);
-      start.setHours(startHour, Math.floor(Math.random() * 60), 0, 0);
-      const actualMin = 25 + Math.floor(Math.random() * 70); // 25–95 min
-      const startMs = start.getTime();
-      sessions.push({
-        examId: exam.id,
-        subjectId: subj.id,
-        startedAt: startMs,
-        endedAt: startMs + actualMin * 60 * 1000,
-        plannedSeconds: 0,
-        actualSeconds: actualMin * 60,
-        type: Math.random() > 0.6 ? "pomodoro" : "custom",
-        rating: (1 + Math.floor(Math.random() * 5)) as 1 | 2 | 3 | 4 | 5,
-        notes: undefined,
-        pomodorosCompleted: undefined,
-      });
-    }
-  }
-  for (const s of sessions) {
-    await state.addSession(s);
-  }
-}
+// (seedSampleData moved to src/lib/seed-sample.ts — shared with onboarding)

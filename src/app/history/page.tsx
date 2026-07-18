@@ -21,6 +21,7 @@ import {
 import { useTimer } from "@/lib/stores/timer";
 import { Sheet } from "@/components/sheet";
 import { Button } from "@/components/button";
+import { HistorySkeleton } from "@/components/skeleton";
 import { haptic, notify } from "@/lib/haptics";
 import {
   cn,
@@ -90,7 +91,7 @@ export default function HistoryPage() {
     return eachDayOfInterval({ start, end });
   }, []);
 
-  if (!ready) return null;
+  if (!ready) return <HistorySkeleton />;
 
   return (
     <div className="bg-app min-h-dvh pb-32">

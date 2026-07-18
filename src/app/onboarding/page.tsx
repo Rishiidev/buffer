@@ -3,11 +3,12 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Sparkles, Target, Timer, BarChart3, X } from "lucide-react";
+import { ArrowRight, Sparkles, Target, Timer, BarChart3, X, Check } from "lucide-react";
 import { useDataStore } from "@/lib/stores/data";
 import { formatHours, todayISO } from "@/lib/utils";
 import { toast } from "sonner";
 import { haptic } from "@/lib/haptics";
+import { seedSampleData } from "@/lib/seed-sample";
 
 const SAMPLE_SUBJECTS = [
   { name: "Financial Reporting", estimatedHours: 90, color: "#ff6b35" },
@@ -32,6 +33,7 @@ export default function Onboarding() {
   const [dailyCapacity, setDailyCapacity] = useState(6);
   const [subjects, setSubjects] = useState(SAMPLE_SUBJECTS);
   const [busy, setBusy] = useState(false);
+  const [loadSample, setLoadSample] = useState(true);
 
   // If already set up, leave onboarding
   useEffect(() => {
@@ -64,6 +66,9 @@ export default function Onboarding() {
         });
       }
       await updateSettings({ onboardingComplete: true });
+      if (loadSample) {
+        await seedSampleData();
+      }
       toast.success("You're set up. Let's see if you're on track.");
       router.replace("/");
     } catch (e) {
@@ -322,6 +327,31 @@ export default function Onboarding() {
                 We'll show you the truth on day one. {formatHours(totalHours)}
                 {" "}of runway, distributed across {subjects.length} subjects.
               </p>
+
+              <button
+                type="button"
+                onClick={() => {
+                  haptic("selection");
+                  setLoadSample((v) => !v);
+                }}
+                className="mt-7 mx-auto flex items-center gap-3 px-4 py-3 rounded-2xl bg-elev1 border border-border-soft hover:bg-elev2 transition-colors text-left"
+              >
+                <div
+                  className={`h-6 w-6 rounded-md grid place-items-center transition-all shrink-0 ${
+                    loadSample
+                      ? "bg-accent text-black"
+                      : "bg-elev2 text-fg-faint"
+                  }`}
+                >
+                  {loadSample && <Check className="h-4 w-4" />}
+                </div>
+                <div className="text-left">
+                  <div className="text-sm font-medium">Fill with 14 days of sample data</div>
+                  <div className="text-xs text-fg-muted">
+                    Recommended — see the dashboard come alive.
+                  </div>
+                </div>
+              </button>
             </motion.div>
           )}
         </AnimatePresence>

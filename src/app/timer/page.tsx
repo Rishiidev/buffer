@@ -5,6 +5,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { Button } from "@/components/button";
 import { Sheet } from "@/components/sheet";
+import { TimerIdleSkeleton } from "@/components/skeleton";
 import {
   Play,
   Pause,
@@ -332,7 +333,7 @@ export default function TimerPage() {
   };
 
   // Routing guard
-  if (!ready) return null;
+  if (!ready) return <TimerIdleSkeleton />;
   if (!activeExam) {
     return (
       <div className="bg-app min-h-dvh flex items-center justify-center px-6">
