@@ -1,33 +1,15 @@
 "use client";
 
-import { usePathname } from "next/navigation";
-import { AnimatePresence, motion } from "framer-motion";
 import { type ReactNode } from "react";
 
 /**
- * Wraps page content with iOS-style horizontal slide+fade transitions.
- * Direction inferred from route depth — feels like native navigation.
+ * Page wrapper. Originally used framer-motion AnimatePresence for slide
+ * transitions, but the spring physics + mode="wait" caused visible lag
+ * and tap-blocking on iOS PWA. Replaced with a plain wrapper for now —
+ * iOS users get instant navigation, which is more "native" than a slow
+ * slide. Can be reintroduced with mode="popLayout" + lightweight CSS
+ * transitions in v2 if desired.
  */
 export function RouteFade({ children }: { children: ReactNode }) {
-  const pathname = usePathname();
-
-  return (
-    <AnimatePresence mode="wait" initial={false}>
-      <motion.div
-        key={pathname}
-        initial={{ opacity: 0, x: 12 }}
-        animate={{ opacity: 1, x: 0 }}
-        exit={{ opacity: 0, x: -8 }}
-        transition={{
-          type: "spring",
-          stiffness: 380,
-          damping: 32,
-          mass: 0.8,
-        }}
-        className="min-h-dvh"
-      >
-        {children}
-      </motion.div>
-    </AnimatePresence>
-  );
+  return <>{children}</>;
 }

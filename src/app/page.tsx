@@ -30,6 +30,7 @@ import {
 } from "@/lib/utils";
 import { RiskRing } from "@/components/risk-ring";
 import { Heatmap } from "@/components/heatmap";
+import { DashboardSkeleton } from "@/components/skeleton";
 
 export default function Dashboard() {
   const data = useData();
@@ -63,7 +64,7 @@ export default function Dashboard() {
     }
   }, [ready, settings, router]);
 
-  if (!ready) return null;
+  if (!ready) return <DashboardSkeleton />;
   if (!settings?.onboardingComplete) return null;
   if (!activeExam || !out) return null;
 
@@ -84,7 +85,7 @@ export default function Dashboard() {
   );
 
   return (
-    <div className="bg-app min-h-dvh pb-32">
+    <div className="bg-app min-h-dvh pb-40">
       <header className="px-5 pt-10 pb-2">
         <div className="flex items-center justify-between">
           <div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { liveQuery } from "dexie";
 import { getDb, ensureSettings } from "@/lib/db";
 import type { Exam, Session, Settings, Subject } from "@/lib/db/schema";
@@ -127,15 +127,26 @@ export function useData() {
     setSettings(updated);
   }, []);
 
+  // Memoize derived arrays so consumers' useMemos don't re-run on every render.
+  const activeExam = useMemo(() => exams[0] ?? null, [exams]);
+  const activeSubjects = useMemo(
+    () => (activeExam ? subjects.filter((s) => s.examId === activeExam.id) : []),
+    [subjects, activeExam],
+  );
+  const examSessions = useMemo(
+    () => (activeExam ? sessions.filter((s) => s.examId === activeExam.id) : []),
+    [sessions, activeExam],
+  );
+
   return {
     ready,
     exams,
     subjects,
     sessions,
     settings,
-    activeExam: exams[0] ?? null,
-    activeSubjects: exams[0] ? subjects.filter((s) => s.examId === exams[0].id) : [],
-    examSessions: exams[0] ? sessions.filter((s) => s.examId === exams[0].id) : [],
+    activeExam,
+    activeSubjects,
+    examSessions,
     addExam,
     updateExam,
     deleteExam,

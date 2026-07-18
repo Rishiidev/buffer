@@ -3,10 +3,11 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Sparkles, Target, Timer, BarChart3 } from "lucide-react";
+import { ArrowRight, Sparkles, Target, Timer, BarChart3, X } from "lucide-react";
 import { useData } from "@/lib/hooks/use-data";
 import { formatHours, todayISO } from "@/lib/utils";
 import { toast } from "sonner";
+import { haptic } from "@/lib/haptics";
 
 const SAMPLE_SUBJECTS = [
   { name: "Financial Reporting", estimatedHours: 90, color: "#ff6b35" },
@@ -232,28 +233,44 @@ export default function Onboarding() {
                 {subjects.map((s, i) => (
                   <div
                     key={i}
-                    className="card p-3 flex items-center gap-3"
+                    className="card p-3 space-y-2"
                   >
-                    <div
-                      className="h-8 w-1.5 rounded-full"
-                      style={{ background: s.color }}
-                    />
-                    <input
-                      className="bg-transparent flex-1 outline-none text-fg font-medium"
-                      value={s.name}
-                      onChange={(e) =>
-                        setSubjects((prev) =>
-                          prev.map((p, j) =>
-                            j === i ? { ...p, name: e.target.value } : p,
-                          ),
-                        )
-                      }
-                    />
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="h-8 w-1.5 rounded-full shrink-0"
+                        style={{ background: s.color }}
+                      />
+                      <input
+                        className="bg-transparent flex-1 min-w-0 outline-none text-fg font-medium"
+                        value={s.name}
+                        placeholder="Subject name"
+                        onChange={(e) =>
+                          setSubjects((prev) =>
+                            prev.map((p, j) =>
+                              j === i ? { ...p, name: e.target.value } : p,
+                            ),
+                          )
+                        }
+                      />
+                      {subjects.length > 1 && (
+                        <button
+                          onClick={() => {
+                            haptic("warning");
+                            setSubjects((prev) => prev.filter((_, j) => j !== i));
+                          }}
+                          className="shrink-0 h-9 w-9 rounded-full bg-elev2 text-fg-muted hover:bg-bad/15 hover:text-bad active:scale-95 transition-all grid place-items-center"
+                          aria-label={`Remove ${s.name || "subject"}`}
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 pl-3.5">
+                      <span className="text-xs text-fg-faint">Budget</span>
                       <input
                         type="number"
                         min={1}
-                        className="bg-elev2 w-16 text-right rounded-lg px-2 py-1.5 text-sm num outline-none"
+                        className="bg-elev2 w-20 text-right rounded-lg px-2.5 py-1.5 text-sm num outline-none"
                         value={s.estimatedHours}
                         onChange={(e) =>
                           setSubjects((prev) =>
@@ -265,18 +282,8 @@ export default function Onboarding() {
                           )
                         }
                       />
-                      <span className="text-fg-muted text-sm">hr</span>
+                      <span className="text-fg-muted text-xs">hours</span>
                     </div>
-                    {subjects.length > 1 && (
-                      <button
-                        onClick={() =>
-                          setSubjects((prev) => prev.filter((_, j) => j !== i))
-                        }
-                        className="text-fg-faint hover:text-bad text-xs ml-2"
-                      >
-                        remove
-                      </button>
-                    )}
                   </div>
                 ))}
                 <button
