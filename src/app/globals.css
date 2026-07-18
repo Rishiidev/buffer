@@ -17,8 +17,8 @@ body {
 @layer base {
   :root {
     --bg: #0a0a0b;
-    --bg-elev-1: #15161a;
-    --bg-elev-2: #1c1d22;
+    --bg-elev1: #15161a;
+    --bg-elev2: #1c1d22;
     --border: #26272d;
     --border-soft: #1f2026;
     --fg: #f5f5f7;
@@ -35,10 +35,10 @@ body {
 
 @layer components {
   .card {
-    @apply rounded-2xl bg-elev-1 border border-border-soft;
+    @apply rounded-2xl bg-elev1 border border-border-soft;
   }
   .card-interactive {
-    @apply card transition-colors hover:bg-elev-2 active:scale-[0.99];
+    @apply card transition-colors hover:bg-elev2 active:scale-[0.99];
   }
   .num {
     font-variant-numeric: tabular-nums;
@@ -54,16 +54,16 @@ body {
     @apply btn bg-accent text-black hover:brightness-110;
   }
   .btn-ghost {
-    @apply btn bg-elev-1 text-fg hover:bg-elev-2;
+    @apply btn bg-elev1 text-fg hover:bg-elev2;
   }
   .btn-outline {
-    @apply btn border border-border text-fg hover:bg-elev-1;
+    @apply btn border border-border text-fg hover:bg-elev1;
   }
   .chip {
     @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium;
   }
   .field {
-    @apply w-full rounded-xl bg-elev-1 border border-border-soft px-4 py-3 text-fg placeholder:text-fg-faint focus:outline-none focus:border-accent focus:bg-elev-2 transition-colors;
+    @apply w-full rounded-xl bg-elev1 border border-border-soft px-4 py-3 text-fg placeholder:text-fg-faint focus:outline-none focus:border-accent focus:bg-elev2 transition-colors;
   }
   .label {
     @apply text-xs font-medium uppercase tracking-wider text-fg-muted;

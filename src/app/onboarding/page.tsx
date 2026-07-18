@@ -253,7 +253,7 @@ export default function Onboarding() {
                       <input
                         type="number"
                         min={1}
-                        className="bg-elev-2 w-16 text-right rounded-lg px-2 py-1.5 text-sm num outline-none"
+                        className="bg-elev2 w-16 text-right rounded-lg px-2 py-1.5 text-sm num outline-none"
                         value={s.estimatedHours}
                         onChange={(e) =>
                           setSubjects((prev) =>

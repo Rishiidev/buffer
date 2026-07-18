@@ -44,26 +44,6 @@ export default function Dashboard() {
     [examSessions],
   );
 
-  // Routing gate
-  if (!ready) return null;
-  if (!settings?.onboardingComplete) {
-    if (typeof window !== "undefined") {
-      window.location.href = "/onboarding";
-    }
-    return null;
-  }
-  if (!activeExam) return null;
-
-  const totalSubjectHours = activeSubjects.reduce(
-    (acc, s) => acc + s.estimatedHours,
-    0,
-  );
-
-  const progressPct =
-    out!.requiredHours > 0
-      ? Math.min(100, (out!.completedHours / out!.requiredHours) * 100)
-      : 0;
-
   const todayCompleted = useMemo(() => {
     const start = new Date();
     start.setHours(0, 0, 0, 0);
@@ -73,7 +53,27 @@ export default function Dashboard() {
       .reduce((acc, s) => acc + s.actualSeconds, 0);
   }, [examSessions]);
 
-  const todayTargetSeconds = Math.round(out!.todayTargetHours * 3600);
+  // Routing gate
+  if (!ready) return null;
+  if (!settings?.onboardingComplete) {
+    if (typeof window !== "undefined") {
+      window.location.href = "/onboarding";
+    }
+    return null;
+  }
+  if (!activeExam || !out) return null;
+
+  const totalSubjectHours = activeSubjects.reduce(
+    (acc, s) => acc + s.estimatedHours,
+    0,
+  );
+
+  const progressPct =
+    out.requiredHours > 0
+      ? Math.min(100, (out.completedHours / out.requiredHours) * 100)
+      : 0;
+
+  const todayTargetSeconds = Math.round(out.todayTargetHours * 3600);
   const todayPct = Math.min(
     100,
     (todayCompleted / Math.max(1, todayTargetSeconds)) * 100,
@@ -92,7 +92,7 @@ export default function Dashboard() {
           <div className="text-right">
             <div className="text-xs text-fg-muted">Days left</div>
             <div className="text-2xl font-display font-semibold tracking-tight num">
-              {out!.daysLeft}
+              {out.daysLeft}
             </div>
           </div>
         </div>
@@ -101,14 +101,14 @@ export default function Dashboard() {
       <main className="px-5 max-w-md mx-auto space-y-4">
         {/* Hero: Risk ring + countdown */}
         <section className="card p-6 flex flex-col items-center text-center">
-          <RiskRing risk={out!.risk} />
+          <RiskRing risk={out.risk} />
           <div className="mt-4">
             <div className="text-xs uppercase tracking-widest text-fg-muted">
-              {RISK_META[out!.risk].label}
+              {RISK_META[out.risk].label}
             </div>
             <div className="text-4xl font-display font-semibold num mt-1">
-              {out!.bufferDays >= 0 ? "+" : ""}
-              {out!.bufferDays}
+              {out.bufferDays >= 0 ? "+" : ""}
+              {out.bufferDays}
               <span className="text-base text-fg-muted font-medium ml-1">
                 days
               </span>
@@ -121,22 +121,22 @@ export default function Dashboard() {
             <Stat
               icon={<TrendingUp className="h-3.5 w-3.5" />}
               label="Current"
-              value={`${out!.currentPace.toFixed(1)}h`}
+              value={`${out.currentPace.toFixed(1)}h`}
               suffix="/day"
             />
             <Stat
               icon={<TargetIcon className="h-3.5 w-3.5" />}
               label="Required"
-              value={`${out!.requiredPace.toFixed(1)}h`}
+              value={`${out.requiredPace.toFixed(1)}h`}
               suffix="/day"
               warn={
-                out!.requiredPace > out!.currentPace * 1.2
+                out.requiredPace > out.currentPace * 1.2
               }
             />
             <Stat
               icon={<CalendarClock className="h-3.5 w-3.5" />}
               label="Confidence"
-              value={`${out!.confidencePct}%`}
+              value={`${out.confidencePct}%`}
             />
           </div>
         </section>
@@ -160,14 +160,14 @@ export default function Dashboard() {
                   ? "bg-good/15 text-good"
                   : todayPct >= 50
                     ? "bg-warn/15 text-warn"
-                    : "bg-elev-2 text-fg-muted",
+                    : "bg-elev2 text-fg-muted",
               )}
             >
               {todayPct >= 100 ? <CheckCircle2 className="h-3 w-3" /> : null}
               {Math.round(todayPct)}%
             </div>
           </div>
-          <div className="h-1.5 rounded-full bg-elev-2 overflow-hidden">
+          <div className="h-1.5 rounded-full bg-elev2 overflow-hidden">
             <motion.div
               initial={{ width: 0 }}
               animate={{ width: `${todayPct}%` }}
@@ -193,21 +193,21 @@ export default function Dashboard() {
             <div>
               <div className="label">Syllabus progress</div>
               <div className="text-3xl font-display font-semibold num mt-1">
-                {formatHours(out!.completedHours)}
+                {formatHours(out.completedHours)}
                 <span className="text-fg-muted text-lg font-medium">
                   {" / "}
-                  {formatHours(out!.requiredHours)}
+                  {formatHours(out.requiredHours)}
                 </span>
               </div>
             </div>
             <div className="text-right">
               <div className="text-xs text-fg-muted">Remaining</div>
               <div className="text-lg font-display font-semibold num">
-                {formatHours(out!.remainingHours)}
+                {formatHours(out.remainingHours)}
               </div>
             </div>
           </div>
-          <div className="h-1.5 rounded-full bg-elev-2 overflow-hidden mt-3">
+          <div className="h-1.5 rounded-full bg-elev2 overflow-hidden mt-3">
             <motion.div
               initial={{ width: 0 }}
               animate={{ width: `${progressPct}%` }}
@@ -217,7 +217,7 @@ export default function Dashboard() {
           </div>
           <div className="flex justify-between text-xs text-fg-muted mt-2">
             <span className="num">{Math.round(progressPct)}% complete</span>
-            <span>{out!.daysLeft} days left</span>
+            <span>{out.daysLeft} days left</span>
           </div>
         </section>
 
@@ -228,7 +228,7 @@ export default function Dashboard() {
             <div className="label">Today's read</div>
           </div>
           <div className="space-y-2">
-            {out!.recommendations.map((rec, i) => (
+            {out.recommendations.map((rec, i) => (
               <div key={i} className="flex gap-3">
                 <div className="h-1.5 w-1.5 rounded-full bg-accent mt-2 shrink-0" />
                 <p className="text-sm leading-relaxed">{rec}</p>
@@ -242,20 +242,20 @@ export default function Dashboard() {
           <StatCard
             icon={<Flame className="h-4 w-4" />}
             label="Streak"
-            value={`${out!.streakDays}d`}
-            accent={out!.streakDays >= 7 ? "good" : undefined}
+            value={`${out.streakDays}d`}
+            accent={out.streakDays >= 7 ? "good" : undefined}
           />
           <StatCard
             icon={
-              out!.behindHours > 0 ? (
+              out.behindHours > 0 ? (
                 <TrendingDown className="h-4 w-4" />
               ) : (
                 <TrendingUp className="h-4 w-4" />
               )
             }
-            label={out!.behindHours > 0 ? "Behind" : "Ahead"}
-            value={`${Math.abs(out!.behindHours)}h`}
-            accent={out!.behindHours > 0 ? "bad" : "good"}
+            label={out.behindHours > 0 ? "Behind" : "Ahead"}
+            value={`${Math.abs(out.behindHours)}h`}
+            accent={out.behindHours > 0 ? "bad" : "good"}
           />
         </section>
 
@@ -310,7 +310,7 @@ export default function Dashboard() {
                         {formatHours(doneHrs)} / {formatHours(s.estimatedHours)}
                       </div>
                     </div>
-                    <div className="h-1 rounded-full bg-elev-2 overflow-hidden">
+                    <div className="h-1 rounded-full bg-elev2 overflow-hidden">
                       <div
                         className="h-full rounded-full transition-all"
                         style={{
@@ -362,7 +362,7 @@ function Stat({
   warn?: boolean;
 }) {
   return (
-    <div className="bg-elev-2 rounded-xl py-3 px-2">
+    <div className="bg-elev2 rounded-xl py-3 px-2">
       <div className="flex items-center justify-center gap-1 text-fg-muted">
         {icon}
         <span className="text-[10px] uppercase tracking-wider">{label}</span>
@@ -405,7 +405,7 @@ function StatCard({
       <div
         className={cn(
           "h-9 w-9 rounded-lg grid place-items-center",
-          accent ? colors[accent] : "bg-elev-2 text-fg-muted",
+          accent ? colors[accent] : "bg-elev2 text-fg-muted",
         )}
       >
         {icon}

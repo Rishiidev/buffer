@@ -101,7 +101,7 @@ function computeConfidence(
   const coverage = days.length / windowDays;
 
   // Base 60, +30 for coverage, -25 for volatility. Clamp.
-  let confidence = 60 + 30 * clamp(coverage, 0, 1) - 25 * clamp(cv, 0, 2);
+  const confidence = 60 + 30 * clamp(coverage, 0, 1) - 25 * clamp(cv, 0, 2);
   return Math.round(clamp(confidence, 15, 95));
 }
 

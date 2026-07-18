@@ -39,7 +39,7 @@ export function BottomNav() {
                 {active && (
                   <motion.div
                     layoutId="active-tab"
-                    className="absolute inset-0 rounded-xl bg-elev-2"
+                    className="absolute inset-0 rounded-xl bg-elev2"
                     transition={{ type: "spring", duration: 0.4, bounce: 0.18 }}
                   />
                 )}

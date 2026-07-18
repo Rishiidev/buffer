@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useMemo } from "react";
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Play,
@@ -380,14 +381,14 @@ export default function TimerPage() {
                         "rounded-xl p-3 text-left transition-all border",
                         active
                           ? "border-accent bg-accent/10"
-                          : "border-border-soft bg-elev-2 hover:bg-elev-2/70",
+                          : "border-border-soft bg-elev2 hover:bg-elev2/70",
                       )}
                     >
                       <div className="flex items-center gap-2">
                         <div
                           className={cn(
                             "h-7 w-7 rounded-lg grid place-items-center",
-                            active ? "bg-accent text-black" : "bg-elev-1 text-fg-muted",
+                            active ? "bg-accent text-black" : "bg-elev1 text-fg-muted",
                           )}
                         >
                           {m.icon}
@@ -493,7 +494,7 @@ export default function TimerPage() {
             )}
 
             {timer.mode === "pomodoro" && (
-              <div className="chip bg-elev-2 mb-6">
+              <div className="chip bg-elev2 mb-6">
                 {timer.phase === "focus" ? (
                   <>
                     <Brain className="h-3 w-3 text-accent" />
@@ -667,7 +668,7 @@ export default function TimerPage() {
                         "flex-1 py-3 rounded-xl text-sm font-medium transition-colors",
                         rating === r
                           ? "bg-accent text-black"
-                          : "bg-elev-2 text-fg-muted hover:bg-elev-2/70",
+                          : "bg-elev2 text-fg-muted hover:bg-elev2/70",
                       )}
                     >
                       {["★", "★", "★", "★", "★"][r - 1]}
@@ -725,7 +726,7 @@ function Sheet({
         animate={{ y: 0 }}
         exit={{ y: "100%" }}
         transition={{ type: "spring", damping: 30, stiffness: 300 }}
-        className="fixed inset-x-0 bottom-0 z-50 bg-elev-1 rounded-t-3xl border-t border-border-soft p-5 pb-8 max-h-[80vh] overflow-y-auto safe-bottom"
+        className="fixed inset-x-0 bottom-0 z-50 bg-elev1 rounded-t-3xl border-t border-border-soft p-5 pb-8 max-h-[80vh] overflow-y-auto safe-bottom"
       >
         <div className="w-10 h-1 bg-border rounded-full mx-auto mb-4" />
         <div className="text-lg font-display font-semibold tracking-tight mb-4">
@@ -736,6 +737,3 @@ function Sheet({
     </>
   );
 }
-
-// Need Link import
-import Link from "next/link";

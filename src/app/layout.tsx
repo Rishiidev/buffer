@@ -3,6 +3,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ToastProvider } from "@/components/toast-provider";
 import { PwaInstaller } from "@/components/pwa-installer";
+import { BottomNav } from "@/components/bottom-nav";
 
 export const metadata: Metadata = {
   title: "Buffer — am I on track?",
@@ -46,6 +47,7 @@ export default function RootLayout({
         <ThemeProvider>
           <ToastProvider>
             {children}
+            <BottomNav />
             <PwaInstaller />
           </ToastProvider>
         </ThemeProvider>
