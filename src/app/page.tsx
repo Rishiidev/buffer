@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   TrendingDown,
@@ -45,7 +46,8 @@ export default function Dashboard() {
   );
 
   const todayCompleted = useMemo(() => {
-    const start = new Date();
+    const now = new Date();
+    const start = new Date(now);
     start.setHours(0, 0, 0, 0);
     const end = start.getTime() + 86_400_000;
     return examSessions
@@ -54,13 +56,15 @@ export default function Dashboard() {
   }, [examSessions]);
 
   // Routing gate
-  if (!ready) return null;
-  if (!settings?.onboardingComplete) {
-    if (typeof window !== "undefined") {
-      window.location.href = "/onboarding";
+  const router = useRouter();
+  useEffect(() => {
+    if (ready && settings && !settings.onboardingComplete) {
+      router.replace("/onboarding");
     }
-    return null;
-  }
+  }, [ready, settings, router]);
+
+  if (!ready) return null;
+  if (!settings?.onboardingComplete) return null;
   if (!activeExam || !out) return null;
 
   const totalSubjectHours = activeSubjects.reduce(

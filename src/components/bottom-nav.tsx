@@ -15,6 +15,8 @@ const TABS = [
 
 export function BottomNav() {
   const pathname = usePathname();
+  // Hide during onboarding — it has its own fixed CTA footer.
+  if (pathname === "/onboarding") return null;
   return (
     <nav
       className="fixed bottom-0 inset-x-0 z-30 safe-bottom"

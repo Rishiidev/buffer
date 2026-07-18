@@ -98,7 +98,7 @@ export default function Onboarding() {
         </div>
       </header>
 
-      <main className="flex-1 px-6 pb-32 max-w-md w-full mx-auto">
+      <main className="flex-1 px-6 pt-4 pb-44 max-w-md w-full mx-auto">
         <AnimatePresence mode="wait">
           {step === 0 && (
             <motion.div
@@ -318,7 +318,7 @@ export default function Onboarding() {
         </AnimatePresence>
       </main>
 
-      <footer className="fixed bottom-0 inset-x-0 px-6 safe-bottom">
+      <footer className="fixed bottom-0 inset-x-0 z-50 px-6 safe-bottom bg-gradient-to-t from-bg via-bg/95 to-transparent pt-6">
         <div className="mx-auto max-w-md flex items-center gap-3 pb-4">
           {step > 0 && (
             <button onClick={prev} className="btn-ghost">

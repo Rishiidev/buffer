@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus,
@@ -31,6 +32,7 @@ const COLORS = [
 
 export default function SettingsPage() {
   const data = useData();
+  const router = useRouter();
   const [showExamModal, setShowExamModal] = useState(false);
 
   if (!data.ready || !data.activeExam) return null;
@@ -240,7 +242,7 @@ export default function SettingsPage() {
                   },
                 );
                 toast("Data wiped");
-                window.location.href = "/onboarding";
+                router.push("/onboarding");
               }}
               className="card-interactive w-full p-4 flex items-center gap-3 text-bad"
             >
@@ -277,7 +279,8 @@ export default function SettingsPage() {
               if (!ok) return;
               await data.deleteExam(data.activeExam!.id);
               toast("Exam deleted");
-              window.location.href = "/onboarding";
+              setShowExamModal(false);
+              router.push("/onboarding");
             }}
           />
         )}

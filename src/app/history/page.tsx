@@ -200,23 +200,30 @@ export default function HistoryPage() {
 
       {/* Edit modal */}
       <AnimatePresence>
-        {editing && (
-          <EditSessionSheet
-            session={data.examSessions.find((s) => s.id === editing)!}
-            subjectById={subjectById}
-            onClose={() => setEditing(null)}
-            onDelete={async () => {
-              await data.deleteSession(editing);
-              toast("Session deleted");
-              setEditing(null);
-            }}
-            onSave={async (patch) => {
-              await data.updateSession(editing, patch);
-              toast.success("Updated");
-              setEditing(null);
-            }}
-          />
-        )}
+        {editing && (() => {
+          const session = data.examSessions.find((s) => s.id === editing);
+          if (!session) {
+            // Session was deleted from elsewhere; close the modal safely.
+            return null;
+          }
+          return (
+            <EditSessionSheet
+              session={session}
+              subjectById={subjectById}
+              onClose={() => setEditing(null)}
+              onDelete={async () => {
+                await data.deleteSession(editing);
+                toast("Session deleted");
+                setEditing(null);
+              }}
+              onSave={async (patch) => {
+                await data.updateSession(editing, patch);
+                toast.success("Updated");
+                setEditing(null);
+              }}
+            />
+          );
+        })()}
       </AnimatePresence>
     </div>
   );
