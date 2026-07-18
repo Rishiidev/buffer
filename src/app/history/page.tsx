@@ -13,7 +13,11 @@ import {
   Filter,
   X,
 } from "lucide-react";
-import { useData } from "@/lib/hooks/use-data";
+import {
+  useDataStore,
+  useExamSessions,
+  useActiveSubjects,
+} from "@/lib/stores/data";
 import { useTimer } from "@/lib/stores/timer";
 import { Sheet } from "@/components/sheet";
 import { Button } from "@/components/button";
@@ -24,6 +28,7 @@ import {
   formatClockFromSeconds,
   uid,
 } from "@/lib/utils";
+import type { Session, Subject } from "@/lib/db/schema";
 import { toast } from "sonner";
 import {
   startOfWeek,
@@ -35,7 +40,10 @@ import {
 } from "date-fns";
 
 export default function HistoryPage() {
-  const data = useData();
+  const ready = useDataStore((s) => s.ready);
+  const allSubjects = useDataStore((s) => s.subjects);
+  const examSessions = useExamSessions();
+  const activeSubjects = useActiveSubjects();
   const timer = useTimer();
   const [view, setView] = useState<"list" | "calendar">("list");
   const [query, setQuery] = useState("");
@@ -43,12 +51,12 @@ export default function HistoryPage() {
   const [editing, setEditing] = useState<string | null>(null);
 
   const subjectById = useMemo(
-    () => new Map(data.subjects.map((s) => [s.id, s])),
-    [data.subjects],
+    () => new Map(allSubjects.map((s) => [s.id, s])),
+    [allSubjects],
   );
 
   const filtered = useMemo(() => {
-    return data.examSessions.filter((s) => {
+    return examSessions.filter((s) => {
       if (filterSubject && s.subjectId !== filterSubject) return false;
       if (query.trim()) {
         const subj = subjectById.get(s.subjectId)?.name ?? "";
@@ -57,19 +65,19 @@ export default function HistoryPage() {
       }
       return true;
     });
-  }, [data.examSessions, filterSubject, query, subjectById]);
+  }, [examSessions, filterSubject, query, subjectById]);
 
   const totalsByDay = useMemo(() => {
     const map = new Map<string, number>();
-    for (const s of data.examSessions) {
+    for (const s of examSessions) {
       const d = new Date(s.startedAt);
       const k = format(d, "yyyy-MM-dd");
       map.set(k, (map.get(k) ?? 0) + s.actualSeconds);
     }
     return map;
-  }, [data.examSessions]);
+  }, [examSessions]);
 
-  const totalSec = data.examSessions.reduce(
+  const totalSec = examSessions.reduce(
     (acc, s) => acc + s.actualSeconds,
     0,
   );
@@ -82,7 +90,7 @@ export default function HistoryPage() {
     return eachDayOfInterval({ start, end });
   }, []);
 
-  if (!data.ready) return null;
+  if (!ready) return null;
 
   return (
     <div className="bg-app min-h-dvh pb-32">
@@ -135,7 +143,7 @@ export default function HistoryPage() {
         </div>
 
         {/* Subject filter chips */}
-        {data.activeSubjects.length > 0 && (
+        {activeSubjects.length > 0 && (
           <div className="flex gap-2 overflow-x-auto -mx-1 px-1 pb-1">
             <button
               onClick={() => setFilterSubject(null)}
@@ -148,7 +156,7 @@ export default function HistoryPage() {
             >
               All
             </button>
-            {data.activeSubjects.map((s) => (
+            {activeSubjects.map((s) => (
               <button
                 key={s.id}
                 onClick={() => setFilterSubject(s.id)}
@@ -173,7 +181,7 @@ export default function HistoryPage() {
           <CalendarView
             weekDays={weekDays}
             totalsByDay={totalsByDay}
-            sessions={data.examSessions}
+            sessions={examSessions}
             subjectById={subjectById}
           />
         ) : (
@@ -184,7 +192,7 @@ export default function HistoryPage() {
           />
         )}
 
-        {data.examSessions.length === 0 && (
+        {examSessions.length === 0 && (
           <div className="card p-6 text-center mt-4">
             <Clock className="h-6 w-6 mx-auto text-fg-faint mb-2" />
             <div className="text-sm font-medium">No sessions yet</div>
@@ -204,7 +212,7 @@ export default function HistoryPage() {
       {/* Edit modal */}
       <AnimatePresence>
         {editing && (() => {
-          const session = data.examSessions.find((s) => s.id === editing);
+          const session = examSessions.find((s) => s.id === editing);
           if (!session) {
             // Session was deleted from elsewhere; close the modal safely.
             return null;
@@ -216,12 +224,12 @@ export default function HistoryPage() {
               subjectById={subjectById}
               onClose={() => setEditing(null)}
               onDelete={async () => {
-                await data.deleteSession(editing);
+                await useDataStore.getState().deleteSession(editing);
                 toast("Session deleted");
                 setEditing(null);
               }}
               onSave={async (patch) => {
-                await data.updateSession(editing, patch);
+                await useDataStore.getState().updateSession(editing, patch);
                 toast.success("Updated");
                 setEditing(null);
               }}
@@ -238,8 +246,8 @@ function ListView({
   subjectById,
   onEdit,
 }: {
-  sessions: ReturnType<typeof useData>["examSessions"];
-  subjectById: Map<string, ReturnType<typeof useData>["subjects"][number]>;
+  sessions: Session[];
+  subjectById: Map<string, Subject>;
   onEdit: (id: string) => void;
 }) {
   // Group by day
@@ -338,8 +346,8 @@ function CalendarView({
 }: {
   weekDays: Date[];
   totalsByDay: Map<string, number>;
-  sessions: ReturnType<typeof useData>["examSessions"];
-  subjectById: Map<string, ReturnType<typeof useData>["subjects"][number]>;
+  sessions: Session[];
+  subjectById: Map<string, Subject>;
 }) {
   const maxSec = Math.max(1, ...Array.from(totalsByDay.values()));
   return (
@@ -405,8 +413,8 @@ function EditSessionSheet({
   onSave,
   onDelete,
 }: {
-  session: ReturnType<typeof useData>["examSessions"][number];
-  subjectById: Map<string, ReturnType<typeof useData>["subjects"][number]>;
+  session: Session[][number];
+  subjectById: Map<string, Subject>;
   open: boolean;
   onClose: () => void;
   onSave: (patch: Partial<typeof session>) => Promise<void>;

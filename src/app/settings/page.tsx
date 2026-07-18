@@ -14,7 +14,12 @@ import {
   Database,
   RefreshCw,
 } from "lucide-react";
-import { useData } from "@/lib/hooks/use-data";
+import {
+  useDataStore,
+  useActiveExam,
+  useActiveSubjects,
+} from "@/lib/stores/data";
+import type { Exam, Session, Subject } from "@/lib/db/schema";
 import { toast } from "sonner";
 import { format, addDays, subDays } from "date-fns";
 import { cn, uid } from "@/lib/utils";
@@ -34,11 +39,14 @@ const COLORS = [
 ];
 
 export default function SettingsPage() {
-  const data = useData();
+  const ready = useDataStore((s) => s.ready);
+  const settings = useDataStore((s) => s.settings);
+  const activeExam = useActiveExam();
+  const activeSubjects = useActiveSubjects();
   const router = useRouter();
   const [showExamModal, setShowExamModal] = useState(false);
 
-  if (!data.ready || !data.activeExam) return null;
+  if (!ready || !activeExam) return null;
 
   return (
     <div className="bg-app min-h-dvh pb-32">
@@ -61,13 +69,13 @@ export default function SettingsPage() {
             </button>
           </div>
           <div className="card p-4">
-            <div className="font-medium">{data.activeExam.name}</div>
+            <div className="font-medium">{activeExam.name}</div>
             <div className="grid grid-cols-3 gap-3 mt-3">
-              <Stat label="Date" value={format(new Date(data.activeExam.date), "d MMM yyyy")} />
-              <Stat label="Required" value={`${data.activeExam.totalRequiredHours}h`} />
+              <Stat label="Date" value={format(new Date(activeExam.date), "d MMM yyyy")} />
+              <Stat label="Required" value={`${activeExam.totalRequiredHours}h`} />
               <Stat
                 label="Daily cap"
-                value={`${data.activeExam.dailyCapacityHours}h`}
+                value={`${activeExam.dailyCapacityHours}h`}
               />
             </div>
           </div>
@@ -78,37 +86,37 @@ export default function SettingsPage() {
           <div className="flex items-center justify-between mb-2">
             <div className="label">Subjects</div>
             <div className="text-xs text-fg-muted">
-              {data.activeSubjects.length} total
+              {activeSubjects.length} total
             </div>
           </div>
           <div className="space-y-2">
-            {data.activeSubjects.map((s) => (
+            {activeSubjects.map((s) => (
               <SubjectRow
                 key={s.id}
                 subject={s}
                 onUpdate={async (patch) => {
-                  await data.updateSubject(s.id, patch);
+                  useDataStore.getState().updateSubject(s.id, patch);
                   toast.success("Updated");
                 }}
                 onDelete={async () => {
-                  if (data.activeSubjects.length <= 1) {
+                  if (activeSubjects.length <= 1) {
                     toast.error("Need at least one subject");
                     return;
                   }
-                  await data.deleteSubject(s.id);
+                  useDataStore.getState().deleteSubject(s.id);
                   toast("Subject removed");
                 }}
               />
             ))}
             <NewSubjectRow
-              examId={data.activeExam.id}
+              examId={activeExam.id}
               onCreate={async (name, hours, color) => {
                 if (!name.trim()) {
                   toast.error("Name required");
                   return;
                 }
-                await data.addSubject({
-                  examId: data.activeExam!.id,
+                useDataStore.getState().addSubject({
+                  examId: activeExam!.id,
                   name: name.trim(),
                   estimatedHours: hours,
                   color,
@@ -126,38 +134,38 @@ export default function SettingsPage() {
             <Slider
               label="Focus"
               suffix="min"
-              value={data.settings?.pomodoroFocusMin ?? 25}
+              value={settings?.pomodoroFocusMin ?? 25}
               min={5}
               max={90}
               step={5}
-              onChange={(v) => data.updateSettings({ pomodoroFocusMin: v })}
+              onChange={(v) => useDataStore.getState().updateSettings({ pomodoroFocusMin: v })}
             />
             <Slider
               label="Short break"
               suffix="min"
-              value={data.settings?.pomodoroShortBreakMin ?? 5}
+              value={settings?.pomodoroShortBreakMin ?? 5}
               min={1}
               max={30}
               step={1}
-              onChange={(v) => data.updateSettings({ pomodoroShortBreakMin: v })}
+              onChange={(v) => useDataStore.getState().updateSettings({ pomodoroShortBreakMin: v })}
             />
             <Slider
               label="Long break"
               suffix="min"
-              value={data.settings?.pomodoroLongBreakMin ?? 15}
+              value={settings?.pomodoroLongBreakMin ?? 15}
               min={5}
               max={60}
               step={5}
-              onChange={(v) => data.updateSettings({ pomodoroLongBreakMin: v })}
+              onChange={(v) => useDataStore.getState().updateSettings({ pomodoroLongBreakMin: v })}
             />
             <Slider
               label="Pomodoros before long break"
               suffix=""
-              value={data.settings?.pomodorosBeforeLongBreak ?? 4}
+              value={settings?.pomodorosBeforeLongBreak ?? 4}
               min={2}
               max={8}
               step={1}
-              onChange={(v) => data.updateSettings({ pomodorosBeforeLongBreak: v })}
+              onChange={(v) => useDataStore.getState().updateSettings({ pomodorosBeforeLongBreak: v })}
             />
           </div>
         </section>
@@ -167,12 +175,12 @@ export default function SettingsPage() {
           <div className="label mb-2">Sound</div>
           <button
             onClick={() =>
-              data.updateSettings({ soundEnabled: !data.settings?.soundEnabled })
+              useDataStore.getState().updateSettings({ soundEnabled: !settings?.soundEnabled })
             }
             className="card-interactive w-full p-4 flex items-center justify-between"
           >
             <div className="flex items-center gap-3">
-              {data.settings?.soundEnabled ? (
+              {settings?.soundEnabled ? (
                 <Volume2 className="h-4 w-4 text-accent" />
               ) : (
                 <VolumeX className="h-4 w-4 text-fg-muted" />
@@ -180,20 +188,20 @@ export default function SettingsPage() {
               <div className="text-left">
                 <div className="text-sm font-medium">Phase-change chimes</div>
                 <div className="text-xs text-fg-muted">
-                  {data.settings?.soundEnabled ? "On" : "Off"}
+                  {settings?.soundEnabled ? "On" : "Off"}
                 </div>
               </div>
             </div>
             <div
               className={cn(
                 "w-10 h-6 rounded-full transition-colors relative",
-                data.settings?.soundEnabled ? "bg-accent" : "bg-elev2",
+                settings?.soundEnabled ? "bg-accent" : "bg-elev2",
               )}
             >
               <div
                 className={cn(
                   "absolute top-0.5 h-5 w-5 rounded-full bg-white transition-all",
-                  data.settings?.soundEnabled ? "left-[18px]" : "left-0.5",
+                  settings?.soundEnabled ? "left-[18px]" : "left-0.5",
                 )}
               />
             </div>
@@ -210,7 +218,7 @@ export default function SettingsPage() {
                   "This will load ~14 days of sample sessions for the active exam. Continue?",
                 );
                 if (!ok) return;
-                await seedSampleData(data);
+                await seedSampleData();
                 toast.success("Sample data loaded");
               }}
               className="card-interactive w-full p-4 flex items-center gap-3"
@@ -266,11 +274,11 @@ export default function SettingsPage() {
       </main>
 
       <ExamEditSheet
-        open={showExamModal && !!data.activeExam}
-        exam={data.activeExam!}
+        open={showExamModal && !!activeExam}
+        exam={activeExam!}
         onClose={() => setShowExamModal(false)}
             onSave={async (patch) => {
-              await data.updateExam(data.activeExam!.id, patch);
+              useDataStore.getState().updateExam(activeExam!.id, patch);
               toast.success("Exam updated");
               setShowExamModal(false);
             }}
@@ -279,7 +287,7 @@ export default function SettingsPage() {
                 "Delete this exam, all its subjects, and all its sessions?",
               );
               if (!ok) return;
-              await data.deleteExam(data.activeExam!.id);
+              useDataStore.getState().deleteExam(activeExam!.id);
               toast("Exam deleted");
               setShowExamModal(false);
               router.push("/onboarding");
@@ -344,7 +352,7 @@ function SubjectRow({
   onUpdate,
   onDelete,
 }: {
-  subject: ReturnType<typeof useData>["activeSubjects"][number];
+  subject: Subject;
   onUpdate: (patch: Partial<typeof subject>) => Promise<void>;
   onDelete: () => Promise<void>;
 }) {
@@ -482,9 +490,9 @@ function ExamEditSheet({
   onDelete,
 }: {
   open: boolean;
-  exam: NonNullable<ReturnType<typeof useData>["activeExam"]>;
+  exam: Exam;
   onClose: () => void;
-  onSave: (patch: Partial<NonNullable<ReturnType<typeof useData>["activeExam"]>>) => Promise<void>;
+  onSave: (patch: Partial<Exam>) => Promise<void>;
   onDelete: () => Promise<void>;
 }) {
   const [name, setName] = useState(exam.name);
@@ -558,13 +566,14 @@ function ExamEditSheet({
 
 // Sample-data seeder: builds a believable 14-day history so users can see
 // the dashboard light up immediately.
-async function seedSampleData(data: ReturnType<typeof useData>) {
-  const exam = data.activeExam;
+async function seedSampleData() {
+  const state = useDataStore.getState();
+  const exam = state.exams[0] ?? null;
   if (!exam) return;
-  const subjects = data.activeSubjects;
+  const subjects = state.subjects.filter((s) => s.examId === exam.id);
   if (subjects.length === 0) return;
   const now = Date.now();
-  const sessions: Array<Parameters<typeof data.addSession>[0]> = [];
+  const sessions: Array<Omit<Session, "id">> = [];
 
   // Skip the very latest day (today) so user still has a clean "start" feeling.
   for (let d = 14; d >= 1; d--) {
@@ -585,13 +594,13 @@ async function seedSampleData(data: ReturnType<typeof useData>) {
         plannedSeconds: 0,
         actualSeconds: actualMin * 60,
         type: Math.random() > 0.6 ? "pomodoro" : "custom",
-        rating: (1 + Math.floor(Math.random() * 5)) as any,
+        rating: (1 + Math.floor(Math.random() * 5)) as 1 | 2 | 3 | 4 | 5,
         notes: undefined,
         pomodorosCompleted: undefined,
       });
     }
   }
   for (const s of sessions) {
-    await data.addSession(s);
+    await state.addSession(s);
   }
 }

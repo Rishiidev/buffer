@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Sparkles, Target, Timer, BarChart3, X } from "lucide-react";
-import { useData } from "@/lib/hooks/use-data";
+import { useDataStore } from "@/lib/stores/data";
 import { formatHours, todayISO } from "@/lib/utils";
 import { toast } from "sonner";
 import { haptic } from "@/lib/haptics";
@@ -19,7 +19,8 @@ const SAMPLE_SUBJECTS = [
 
 export default function Onboarding() {
   const router = useRouter();
-  const data = useData();
+  const ready = useDataStore((s) => s.ready);
+  const settings = useDataStore((s) => s.settings);
   const [step, setStep] = useState(0);
   const [examName, setExamName] = useState("CA Final — Nov 2026");
   const [examDate, setExamDate] = useState(() => {
@@ -34,10 +35,10 @@ export default function Onboarding() {
 
   // If already set up, leave onboarding
   useEffect(() => {
-    if (data.ready && data.settings?.onboardingComplete) {
+    if (ready && settings?.onboardingComplete) {
       router.replace("/");
     }
-  }, [data.ready, data.settings, router]);
+  }, [ready, settings, router]);
 
   const next = () => setStep((s) => Math.min(s + 1, 3));
   const prev = () => setStep((s) => Math.max(s - 1, 0));
@@ -46,7 +47,8 @@ export default function Onboarding() {
     if (busy) return;
     setBusy(true);
     try {
-      const exam = await data.addExam({
+      const { addExam, addSubject, updateSettings } = useDataStore.getState();
+      const exam = await addExam({
         name: examName,
         date: examDate,
         totalRequiredHours: totalHours,
@@ -54,14 +56,14 @@ export default function Onboarding() {
       });
       for (const s of subjects) {
         if (!s.name.trim()) continue;
-        await data.addSubject({
+        await addSubject({
           examId: exam.id,
           name: s.name.trim(),
           estimatedHours: s.estimatedHours,
           color: s.color,
         });
       }
-      await data.updateSettings({ onboardingComplete: true });
+      await updateSettings({ onboardingComplete: true });
       toast.success("You're set up. Let's see if you're on track.");
       router.replace("/");
     } catch (e) {
@@ -72,7 +74,7 @@ export default function Onboarding() {
     }
   };
 
-  if (!data.ready) return null;
+  if (!ready) return null;
 
   return (
     <div className="bg-app min-h-dvh flex flex-col">

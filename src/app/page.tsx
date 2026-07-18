@@ -16,7 +16,12 @@ import {
   CalendarClock,
   Flame,
 } from "lucide-react";
-import { useData } from "@/lib/hooks/use-data";
+import {
+  useDataStore,
+  useActiveExam,
+  useActiveSubjects,
+  useExamSessions,
+} from "@/lib/stores/data";
 import {
   RISK_META,
   runEngine,
@@ -33,8 +38,11 @@ import { Heatmap } from "@/components/heatmap";
 import { DashboardSkeleton } from "@/components/skeleton";
 
 export default function Dashboard() {
-  const data = useData();
-  const { activeExam, activeSubjects, examSessions, ready, settings } = data;
+  const ready = useDataStore((s) => s.ready);
+  const settings = useDataStore((s) => s.settings);
+  const activeExam = useActiveExam();
+  const activeSubjects = useActiveSubjects();
+  const examSessions = useExamSessions();
 
   const out = useMemo(() => {
     if (!activeExam) return null;

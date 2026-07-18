@@ -5,6 +5,7 @@ import { ToastProvider } from "@/components/toast-provider";
 import { PwaInstaller } from "@/components/pwa-installer";
 import { BottomNav } from "@/components/bottom-nav";
 import { RouteFade } from "@/components/route-fade";
+import { DataHydrator } from "@/lib/stores/data";
 
 export const metadata: Metadata = {
   title: "Buffer — am I on track?",
@@ -47,6 +48,7 @@ export default function RootLayout({
       <body className="min-h-dvh bg-bg text-fg antialiased overscroll-none">
         <ThemeProvider>
           <ToastProvider>
+            <DataHydrator />
             <RouteFade>{children}</RouteFade>
             <BottomNav />
             <PwaInstaller />

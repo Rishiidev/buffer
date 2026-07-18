@@ -18,7 +18,12 @@ import {
   Check,
 } from "lucide-react";
 import { useTimer, type TimerMode } from "@/lib/stores/timer";
-import { useData } from "@/lib/hooks/use-data";
+import {
+  useDataStore,
+  useActiveExam,
+  useActiveSubjects,
+  useExamSessions,
+} from "@/lib/stores/data";
 import { toast } from "sonner";
 import { haptic, notify } from "@/lib/haptics";
 import {
@@ -60,7 +65,11 @@ const MODES: Array<{
 ];
 
 export default function TimerPage() {
-  const data = useData();
+  const ready = useDataStore((s) => s.ready);
+  const activeExam = useActiveExam();
+  const activeSubjects = useActiveSubjects();
+  const examSessions = useExamSessions();
+  const settings = useDataStore((s) => s.settings);
   const timer = useTimer();
   const [showSubjectPicker, setShowSubjectPicker] = useState(false);
   const [showModePicker, setShowModePicker] = useState(false);
@@ -81,8 +90,8 @@ export default function TimerPage() {
   const audioCtxRef = useRef<AudioContext | null>(null);
 
   const subject = useMemo(
-    () => data.activeSubjects.find((s) => s.id === timer.subjectId) ?? null,
-    [data.activeSubjects, timer.subjectId],
+    () => activeSubjects.find((s) => s.id === timer.subjectId) ?? null,
+    [activeSubjects, timer.subjectId],
   );
 
   // --- Tick loop ---
@@ -105,10 +114,10 @@ export default function TimerPage() {
           ) {
             // phase done
             playChime("end");
-            const focusMin = data.settings?.pomodoroFocusMin ?? 25;
-            const shortBreakMin = data.settings?.pomodoroShortBreakMin ?? 5;
-            const longBreakMin = data.settings?.pomodoroLongBreakMin ?? 15;
-            const before = data.settings?.pomodorosBeforeLongBreak ?? 4;
+            const focusMin = settings?.pomodoroFocusMin ?? 25;
+            const shortBreakMin = settings?.pomodoroShortBreakMin ?? 5;
+            const longBreakMin = settings?.pomodoroLongBreakMin ?? 15;
+            const before = settings?.pomodorosBeforeLongBreak ?? 4;
             const newPomos = state.pomodorosCompleted + 1;
             const isLong = newPomos % before === 0;
             state.incrementPomodoro();
@@ -127,7 +136,7 @@ export default function TimerPage() {
             state.phaseElapsed >= state.phasePlanned
           ) {
             playChime("end");
-            const focusMin = data.settings?.pomodoroFocusMin ?? 25;
+            const focusMin = settings?.pomodoroFocusMin ?? 25;
             state.switchPhase("focus", focusMin * 60);
             toast("Back to focus", {
               description: "Tap resume when ready.",
@@ -151,7 +160,7 @@ export default function TimerPage() {
       if (tickRef.current) window.clearInterval(tickRef.current);
       tickRef.current = null;
     };
-  }, [timer.id, timer.status, data.settings]);
+  }, [timer.id, timer.status, settings]);
 
   // --- Wake lock + visibility ---
   useEffect(() => {
@@ -184,7 +193,7 @@ export default function TimerPage() {
   }, [timer.id, timer.status]);
 
   const playChime = (kind: "start" | "end") => {
-    if (!data.settings?.soundEnabled) return;
+    if (!settings?.soundEnabled) return;
     try {
       if (!audioCtxRef.current) {
         audioCtxRef.current = new (window.AudioContext ||
@@ -223,7 +232,7 @@ export default function TimerPage() {
 
   // --- Start / stop ---
   const start = (subjectId: string) => {
-    if (!data.activeExam) {
+    if (!activeExam) {
       toast.error("Set up an exam first");
       return;
     }
@@ -234,7 +243,7 @@ export default function TimerPage() {
     let targetSeconds = 0;
     if (mode === "pomodoro") {
       phase = "focus";
-      phasePlanned = (data.settings?.pomodoroFocusMin ?? 25) * 60;
+      phasePlanned = (settings?.pomodoroFocusMin ?? 25) * 60;
     } else if (mode === "custom") {
       phasePlanned = customMinutes * 60;
     } else if (mode === "countdown") {
@@ -243,7 +252,7 @@ export default function TimerPage() {
     }
     timer.start({
       id: uid(),
-      examId: data.activeExam.id,
+      examId: activeExam.id,
       subjectId,
       mode,
       phase,
@@ -291,8 +300,8 @@ export default function TimerPage() {
 
   const saveSession = async () => {
     if (!pendingEnd) return;
-    await data.addSession({
-      examId: data.activeExam!.id,
+    await useDataStore.getState().addSession({
+      examId: activeExam!.id,
       subjectId: useTimer.getState().subjectId!,
       startedAt: useTimer.getState().startedAt,
       endedAt: Date.now(),
@@ -323,8 +332,8 @@ export default function TimerPage() {
   };
 
   // Routing guard
-  if (!data.ready) return null;
-  if (!data.activeExam) {
+  if (!ready) return null;
+  if (!activeExam) {
     return (
       <div className="bg-app min-h-dvh flex items-center justify-center px-6">
         <div className="text-center max-w-sm">
@@ -607,7 +616,7 @@ export default function TimerPage() {
         title="Pick subject"
       >
         <div className="space-y-2">
-          {data.activeSubjects.map((s) => (
+          {activeSubjects.map((s) => (
             <button
               key={s.id}
               onClick={() => {
