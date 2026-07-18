@@ -2,7 +2,9 @@
 
 import { useEffect, useRef, useState, useMemo } from "react";
 import Link from "next/link";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
+import { Button } from "@/components/button";
+import { Sheet } from "@/components/sheet";
 import {
   Play,
   Pause,
@@ -18,6 +20,7 @@ import {
 import { useTimer, type TimerMode } from "@/lib/stores/timer";
 import { useData } from "@/lib/hooks/use-data";
 import { toast } from "sonner";
+import { haptic, notify } from "@/lib/haptics";
 import {
   cn,
   formatClockFromSeconds,
@@ -116,6 +119,7 @@ export default function TimerPage() {
                 : "Break time — 5 min",
               { description: "Timer paused. Resume when ready." },
             );
+            notify("success");
             state.pause();
           } else if (
             (state.phase === "short-break" || state.phase === "long-break") &&
@@ -128,6 +132,7 @@ export default function TimerPage() {
             toast("Back to focus", {
               description: "Tap resume when ready.",
             });
+            haptic("medium");
             state.pause();
           }
         } else if (state.mode === "countdown") {
@@ -136,6 +141,7 @@ export default function TimerPage() {
             state.totalElapsed >= state.targetSeconds
           ) {
             playChime("end");
+            notify("success");
             handleStop(true);
           }
         }
@@ -595,145 +601,113 @@ export default function TimerPage() {
       </main>
 
       {/* Subject picker sheet */}
-      <AnimatePresence>
-        {showSubjectPicker && (
-          <Sheet onClose={() => setShowSubjectPicker(false)} title="Pick subject">
-            <div className="space-y-2">
-              {data.activeSubjects.map((s) => (
-                <button
-                  key={s.id}
-                  onClick={() => {
-                    timer.stop();
-                    useTimer.setState({ subjectId: s.id });
-                    setShowSubjectPicker(false);
-                  }}
-                  className="card-interactive w-full p-4 flex items-center gap-3"
-                >
-                  <div
-                    className="h-3 w-3 rounded-full"
-                    style={{ background: s.color }}
-                  />
-                  <div className="flex-1 text-left">
-                    <div className="font-medium">{s.name}</div>
-                    <div className="text-xs text-fg-muted">
-                      {s.estimatedHours}h budget
-                    </div>
-                  </div>
-                  {timer.subjectId === s.id && (
-                    <Check className="h-4 w-4 text-accent" />
-                  )}
-                </button>
-              ))}
-              <Link
-                href="/settings"
-                onClick={() => setShowSubjectPicker(false)}
-                className="btn-outline w-full mt-2"
-              >
-                <Plus className="h-4 w-4" />
-                Manage subjects
-              </Link>
-            </div>
-          </Sheet>
-        )}
-      </AnimatePresence>
+      <Sheet
+        open={showSubjectPicker}
+        onClose={() => setShowSubjectPicker(false)}
+        title="Pick subject"
+      >
+        <div className="space-y-2">
+          {data.activeSubjects.map((s) => (
+            <button
+              key={s.id}
+              onClick={() => {
+                haptic("selection");
+                timer.stop();
+                useTimer.setState({ subjectId: s.id });
+                setShowSubjectPicker(false);
+              }}
+              className="card-interactive w-full p-4 flex items-center gap-3 min-h-[56px]"
+            >
+              <div
+                className="h-3 w-3 rounded-full"
+                style={{ background: s.color }}
+              />
+              <div className="flex-1 text-left">
+                <div className="font-medium">{s.name}</div>
+                <div className="text-xs text-fg-muted">
+                  {s.estimatedHours}h budget
+                </div>
+              </div>
+              {timer.subjectId === s.id && (
+                <Check className="h-4 w-4 text-accent" />
+              )}
+            </button>
+          ))}
+          <Link
+            href="/settings"
+            onClick={() => setShowSubjectPicker(false)}
+            className="btn-outline w-full mt-2"
+          >
+            <Plus className="h-4 w-4" />
+            Manage subjects
+          </Link>
+        </div>
+      </Sheet>
 
       {/* End-of-session sheet */}
-      <AnimatePresence>
-        {showEndSheet && pendingEnd && (
-          <Sheet onClose={() => setShowEndSheet(false)} title="How did it go?">
-            <div className="space-y-4">
-              <div className="card p-4 text-center">
-                <div className="text-3xl font-display font-semibold num">
-                  {Math.round(pendingEnd.seconds / 60)}m
-                </div>
-                <div className="text-xs text-fg-muted mt-1">
-                  logged
-                </div>
-                {pendingEnd.pomodoros > 0 && (
-                  <div className="text-xs text-fg-muted mt-2">
-                    {pendingEnd.pomodoros} pomodoro
-                    {pendingEnd.pomodoros === 1 ? "" : "s"} completed
-                  </div>
-                )}
+      <Sheet
+        open={showEndSheet && !!pendingEnd}
+        onClose={() => setShowEndSheet(false)}
+        title="How did it go?"
+      >
+        {pendingEnd && (
+          <div className="space-y-4">
+            <div className="card p-4 text-center">
+              <div className="text-3xl font-display font-semibold num">
+                {Math.round(pendingEnd.seconds / 60)}m
               </div>
-
-              <div>
-                <div className="label mb-2">Focus quality</div>
-                <div className="flex justify-between gap-2">
-                  {[1, 2, 3, 4, 5].map((r) => (
-                    <button
-                      key={r}
-                      onClick={() => setRating(r as any)}
-                      className={cn(
-                        "flex-1 py-3 rounded-xl text-sm font-medium transition-colors",
-                        rating === r
-                          ? "bg-accent text-black"
-                          : "bg-elev2 text-fg-muted hover:bg-elev2/70",
-                      )}
-                    >
-                      {["★", "★", "★", "★", "★"][r - 1]}
-                    </button>
-                  ))}
+              <div className="text-xs text-fg-muted mt-1">
+                logged
+              </div>
+              {pendingEnd.pomodoros > 0 && (
+                <div className="text-xs text-fg-muted mt-2">
+                  {pendingEnd.pomodoros} pomodoro
+                  {pendingEnd.pomodoros === 1 ? "" : "s"} completed
                 </div>
-              </div>
+              )}
+            </div>
 
-              <div>
-                <div className="label mb-2">Notes (optional)</div>
-                <textarea
-                  className="field min-h-[80px] resize-none"
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="What did you cover?"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 pt-2">
-                <button onClick={discard} className="btn-ghost">
-                  Discard
-                </button>
-                <button onClick={saveSession} className="btn-primary">
-                  Save
-                </button>
+            <div>
+              <div className="label mb-2">Focus quality</div>
+              <div className="flex justify-between gap-2">
+                {[1, 2, 3, 4, 5].map((r) => (
+                  <button
+                    key={r}
+                    onClick={() => setRating(r as any)}
+                    className={cn(
+                      "flex-1 py-3 rounded-xl text-sm font-medium transition-colors",
+                      rating === r
+                        ? "bg-accent text-black"
+                        : "bg-elev2 text-fg-muted hover:bg-elev2/70",
+                    )}
+                  >
+                    {"★".repeat(r)}
+                  </button>
+                ))}
               </div>
             </div>
-          </Sheet>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-}
 
-function Sheet({
-  children,
-  title,
-  onClose,
-}: {
-  children: React.ReactNode;
-  title: string;
-  onClose: () => void;
-}) {
-  return (
-    <>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        onClick={onClose}
-        className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
-      />
-      <motion.div
-        initial={{ y: "100%" }}
-        animate={{ y: 0 }}
-        exit={{ y: "100%" }}
-        transition={{ type: "spring", damping: 30, stiffness: 300 }}
-        className="fixed inset-x-0 bottom-0 z-50 bg-elev1 rounded-t-3xl border-t border-border-soft p-5 pb-8 max-h-[80vh] overflow-y-auto safe-bottom"
-      >
-        <div className="w-10 h-1 bg-border rounded-full mx-auto mb-4" />
-        <div className="text-lg font-display font-semibold tracking-tight mb-4">
-          {title}
-        </div>
-        {children}
-      </motion.div>
-    </>
+            <div>
+              <div className="label mb-2">Notes (optional)</div>
+              <textarea
+                className="field min-h-[80px] resize-none"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="What did you cover?"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <button onClick={discard} className="btn-ghost">
+                Discard
+              </button>
+              <button onClick={saveSession} className="btn-primary">
+                Save
+              </button>
+            </div>
+          </div>
+        )}
+      </Sheet>
+    </div>
   );
 }

@@ -15,6 +15,9 @@ import {
 } from "lucide-react";
 import { useData } from "@/lib/hooks/use-data";
 import { useTimer } from "@/lib/stores/timer";
+import { Sheet } from "@/components/sheet";
+import { Button } from "@/components/button";
+import { haptic, notify } from "@/lib/haptics";
 import {
   cn,
   formatHMFromSeconds,
@@ -208,6 +211,7 @@ export default function HistoryPage() {
           }
           return (
             <EditSessionSheet
+              open={true}
               session={session}
               subjectById={subjectById}
               onClose={() => setEditing(null)}
@@ -396,12 +400,14 @@ function CalendarView({
 function EditSessionSheet({
   session,
   subjectById,
+  open,
   onClose,
   onSave,
   onDelete,
 }: {
   session: ReturnType<typeof useData>["examSessions"][number];
   subjectById: Map<string, ReturnType<typeof useData>["subjects"][number]>;
+  open: boolean;
   onClose: () => void;
   onSave: (patch: Partial<typeof session>) => Promise<void>;
   onDelete: () => Promise<void>;
@@ -414,116 +420,94 @@ function EditSessionSheet({
   const subj = subjectById.get(session.subjectId);
 
   return (
-    <>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        onClick={onClose}
-        className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
-      />
-      <motion.div
-        initial={{ y: "100%" }}
-        animate={{ y: 0 }}
-        exit={{ y: "100%" }}
-        transition={{ type: "spring", damping: 30, stiffness: 300 }}
-        className="fixed inset-x-0 bottom-0 z-50 bg-elev1 rounded-t-3xl border-t border-border-soft p-5 pb-8 max-h-[85vh] overflow-y-auto safe-bottom"
-      >
-        <div className="w-10 h-1 bg-border rounded-full mx-auto mb-4" />
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <div className="text-xs uppercase tracking-wider text-fg-muted">
-              Edit session
-            </div>
-            <div className="text-lg font-display font-semibold mt-0.5 flex items-center gap-2">
-              {subj && (
-                <span
-                  className="h-2 w-2 rounded-full"
-                  style={{ background: subj.color }}
-                />
-              )}
-              {subj?.name ?? "Unknown"}
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-fg-muted hover:text-fg"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-
-        <div className="space-y-4">
-          <div>
-            <div className="label mb-2">Duration</div>
-            <div className="flex items-center gap-3">
-              <input
-                type="range"
-                min={1}
-                max={600}
-                value={minutes}
-                onChange={(e) => setMinutes(Number(e.target.value))}
-                className="flex-1 accent-accent"
-              />
-              <div className="text-2xl font-display font-semibold num w-24 text-right">
-                {formatClockFromSeconds(minutes * 60)}
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <div className="label mb-2">Focus quality</div>
-            <div className="flex justify-between gap-2">
-              {[1, 2, 3, 4, 5].map((r) => (
-                <button
-                  key={r}
-                  onClick={() => setRating(r as any)}
-                  className={cn(
-                    "flex-1 py-3 rounded-xl text-sm font-medium transition-colors",
-                    rating === r
-                      ? "bg-accent text-black"
-                      : "bg-elev2 text-fg-muted hover:bg-elev2/70",
-                  )}
-                >
-                  ★
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <div className="label mb-2">Notes</div>
-            <textarea
-              className="field min-h-[80px] resize-none"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="What did you cover?"
+    <Sheet open={open} onClose={onClose} title="Edit session">
+      <div className="space-y-4">
+        <div className="flex items-center gap-2 -mt-2 mb-2">
+          {subj && (
+            <span
+              className="h-2 w-2 rounded-full"
+              style={{ background: subj.color }}
             />
-          </div>
+          )}
+          <span className="text-sm text-fg-muted">{subj?.name ?? "Unknown"}</span>
+        </div>
 
-          <div className="grid grid-cols-2 gap-3 pt-2">
-            <button
-              onClick={onDelete}
-              className="btn-ghost text-bad"
-            >
-              <Trash2 className="h-4 w-4" />
-              Delete
-            </button>
-            <button
-              onClick={() =>
-                onSave({
-                  actualSeconds: minutes * 60,
-                  rating: rating ?? undefined,
-                  notes: notes.trim() || undefined,
-                })
-              }
-              className="btn-primary"
-            >
-              Save
-            </button>
+        <div>
+          <div className="label mb-2">Duration</div>
+          <div className="flex items-center gap-3">
+            <input
+              type="range"
+              min={1}
+              max={600}
+              value={minutes}
+              onChange={(e) => setMinutes(Number(e.target.value))}
+              className="flex-1 accent-accent"
+            />
+            <div className="text-2xl font-display font-semibold num w-24 text-right">
+              {formatClockFromSeconds(minutes * 60)}
+            </div>
           </div>
         </div>
-      </motion.div>
-    </>
+
+        <div>
+          <div className="label mb-2">Focus quality</div>
+          <div className="flex justify-between gap-2">
+            {[1, 2, 3, 4, 5].map((r) => (
+              <button
+                key={r}
+                onClick={() => {
+                  haptic("selection");
+                  setRating(r as any);
+                }}
+                className={cn(
+                  "flex-1 py-3 rounded-xl text-sm font-medium transition-colors",
+                  rating === r
+                    ? "bg-accent text-black"
+                    : "bg-elev2 text-fg-muted hover:bg-elev2/70",
+                )}
+              >
+                ★
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <div className="label mb-2">Notes</div>
+          <textarea
+            className="field min-h-[80px] resize-none"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="What did you cover?"
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 pt-2">
+          <Button
+            variant="danger"
+            onClick={() => {
+              haptic("warning");
+              onDelete();
+            }}
+          >
+            <Trash2 className="h-4 w-4" />
+            Delete
+          </Button>
+          <Button
+            variant="primary"
+            onClick={() => {
+              notify("success");
+              onSave({
+                actualSeconds: minutes * 60,
+                rating: rating ?? undefined,
+                notes: notes.trim() || undefined,
+              });
+            }}
+          >
+            Save
+          </Button>
+        </div>
+      </div>
+    </Sheet>
   );
 }

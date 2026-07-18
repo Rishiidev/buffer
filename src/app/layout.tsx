@@ -4,6 +4,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { ToastProvider } from "@/components/toast-provider";
 import { PwaInstaller } from "@/components/pwa-installer";
 import { BottomNav } from "@/components/bottom-nav";
+import { RouteFade } from "@/components/route-fade";
 
 export const metadata: Metadata = {
   title: "Buffer — am I on track?",
@@ -14,7 +15,6 @@ export const metadata: Metadata = {
     capable: true,
     title: "Buffer",
     statusBarStyle: "black-translucent",
-    startupImage: ["/icon-512.png"],
   },
   formatDetection: { telephone: false },
   icons: {
@@ -34,6 +34,7 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: "cover",
+  interactiveWidget: "resizes-content",
 };
 
 export default function RootLayout({
@@ -43,10 +44,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
-      <body className="min-h-dvh bg-bg text-fg antialiased">
+      <body className="min-h-dvh bg-bg text-fg antialiased overscroll-none">
         <ThemeProvider>
           <ToastProvider>
-            {children}
+            <RouteFade>{children}</RouteFade>
             <BottomNav />
             <PwaInstaller />
           </ToastProvider>

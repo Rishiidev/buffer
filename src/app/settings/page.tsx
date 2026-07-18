@@ -18,6 +18,9 @@ import { useData } from "@/lib/hooks/use-data";
 import { toast } from "sonner";
 import { format, addDays, subDays } from "date-fns";
 import { cn, uid } from "@/lib/utils";
+import { Sheet } from "@/components/sheet";
+import { Button } from "@/components/button";
+import { haptic, notify } from "@/lib/haptics";
 
 const COLORS = [
   "#ff6b35",
@@ -262,11 +265,10 @@ export default function SettingsPage() {
         </footer>
       </main>
 
-      <AnimatePresence>
-        {showExamModal && data.activeExam && (
-          <ExamEditSheet
-            exam={data.activeExam}
-            onClose={() => setShowExamModal(false)}
+      <ExamEditSheet
+        open={showExamModal && !!data.activeExam}
+        exam={data.activeExam!}
+        onClose={() => setShowExamModal(false)}
             onSave={async (patch) => {
               await data.updateExam(data.activeExam!.id, patch);
               toast.success("Exam updated");
@@ -283,8 +285,6 @@ export default function SettingsPage() {
               router.push("/onboarding");
             }}
           />
-        )}
-      </AnimatePresence>
     </div>
   );
 }
@@ -475,14 +475,16 @@ function NewSubjectRow({
 }
 
 function ExamEditSheet({
+  open,
   exam,
   onClose,
   onSave,
   onDelete,
 }: {
-  exam: ReturnType<typeof useData>["activeExam"];
+  open: boolean;
+  exam: NonNullable<ReturnType<typeof useData>["activeExam"]>;
   onClose: () => void;
-  onSave: (patch: Partial<NonNullable<typeof exam>>) => Promise<void>;
+  onSave: (patch: Partial<NonNullable<ReturnType<typeof useData>["activeExam"]>>) => Promise<void>;
   onDelete: () => Promise<void>;
 }) {
   const [name, setName] = useState(exam.name);
@@ -491,88 +493,66 @@ function ExamEditSheet({
   const [capacity, setCapacity] = useState(exam.dailyCapacityHours);
 
   return (
-    <>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        onClick={onClose}
-        className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
-      />
-      <motion.div
-        initial={{ y: "100%" }}
-        animate={{ y: 0 }}
-        exit={{ y: "100%" }}
-        transition={{ type: "spring", damping: 30, stiffness: 300 }}
-        className="fixed inset-x-0 bottom-0 z-50 bg-elev1 rounded-t-3xl border-t border-border-soft p-5 pb-8 max-h-[85vh] overflow-y-auto safe-bottom"
-      >
-        <div className="w-10 h-1 bg-border rounded-full mx-auto mb-4" />
-        <div className="flex items-center justify-between mb-4">
-          <div className="text-lg font-display font-semibold">Edit exam</div>
-          <button onClick={onClose} className="text-fg-muted hover:text-fg">
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-        <div className="space-y-4">
+    <Sheet open={open} onClose={onClose} title="Edit exam">
+      <div className="space-y-4">
+        <label className="block">
+          <div className="label mb-1.5">Name</div>
+          <input className="field" value={name} onChange={(e) => setName(e.target.value)} />
+        </label>
+        <label className="block">
+          <div className="label mb-1.5">Date</div>
+          <input
+            type="date"
+            className="field"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+          />
+        </label>
+        <div className="grid grid-cols-2 gap-3">
           <label className="block">
-            <div className="label mb-1.5">Name</div>
-            <input className="field" value={name} onChange={(e) => setName(e.target.value)} />
-          </label>
-          <label className="block">
-            <div className="label mb-1.5">Date</div>
+            <div className="label mb-1.5">Required hrs</div>
             <input
-              type="date"
-              className="field"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
+              type="number"
+              min={1}
+              className="field num"
+              value={hours}
+              onChange={(e) => setHours(Number(e.target.value))}
             />
           </label>
-          <div className="grid grid-cols-2 gap-3">
-            <label className="block">
-              <div className="label mb-1.5">Required hrs</div>
-              <input
-                type="number"
-                min={1}
-                className="field num"
-                value={hours}
-                onChange={(e) => setHours(Number(e.target.value))}
-              />
-            </label>
-            <label className="block">
-              <div className="label mb-1.5">Daily capacity</div>
-              <input
-                type="number"
-                min={1}
-                max={16}
-                step={0.5}
-                className="field num"
-                value={capacity}
-                onChange={(e) => setCapacity(Number(e.target.value))}
-              />
-            </label>
-          </div>
-          <div className="grid grid-cols-2 gap-3 pt-2">
-            <button onClick={onDelete} className="btn-ghost text-bad">
-              <Trash2 className="h-4 w-4" />
-              Delete
-            </button>
-            <button
-              onClick={() =>
-                onSave({
-                  name,
-                  date,
-                  totalRequiredHours: hours,
-                  dailyCapacityHours: capacity,
-                })
-              }
-              className="btn-primary"
-            >
-              Save
-            </button>
-          </div>
+          <label className="block">
+            <div className="label mb-1.5">Daily capacity</div>
+            <input
+              type="number"
+              min={1}
+              max={16}
+              step={0.5}
+              className="field num"
+              value={capacity}
+              onChange={(e) => setCapacity(Number(e.target.value))}
+            />
+          </label>
         </div>
-      </motion.div>
-    </>
+        <div className="grid grid-cols-2 gap-3 pt-2">
+          <Button variant="danger" onClick={onDelete}>
+            <Trash2 className="h-4 w-4" />
+            Delete
+          </Button>
+          <Button
+            variant="primary"
+            onClick={() =>
+              onSave({
+                name,
+                date,
+                totalRequiredHours: hours,
+                dailyCapacityHours: capacity,
+              })
+            }
+          >
+            Save
+          </Button>
+        </div>
+      </div>
+    </Sheet>
   );
 }
 
