@@ -284,6 +284,11 @@ export default function TimerPage() {
       toast.error("Set up an exam first");
       return;
     }
+    if (!subjectId) {
+      toast.error("Pick a subject first");
+      setShowSubjectPicker(true);
+      return;
+    }
     setShowSubjectPicker(false);
     const mode = useTimer.getState().mode;
     let phase: any = "focus";
@@ -490,16 +495,20 @@ export default function TimerPage() {
               <ChevronDown className="h-5 w-5 text-fg-muted" />
             </button>
 
-            {subject && (
-              <button
-                onClick={() => start(subject.id)}
-                className="btn-primary w-full py-4 text-base"
-                type="button"
-              >
-                <Play className="h-5 w-5" />
-                Start
-              </button>
-            )}
+            <button
+              onClick={() => start(subject?.id ?? "")}
+              disabled={!subject}
+              className={cn(
+                "w-full py-4 text-base rounded-2xl flex items-center justify-center gap-2 font-medium transition-all",
+                subject
+                  ? "bg-accent text-black hover:bg-accent/90 active:scale-[0.98]"
+                  : "bg-elev2 text-fg-muted cursor-not-allowed",
+              )}
+              type="button"
+            >
+              <Play className="h-5 w-5" />
+              {subject ? "Start session" : "Pick a subject to start"}
+            </button>
           </div>
         )}
 
@@ -673,7 +682,7 @@ function ModePicker({ onPick }: { onPick: (id: TimerMode) => void }) {
               onClick={() => onPick(m.id)}
               type="button"
               className={cn(
-                "rounded-xl p-3 text-left transition-all border",
+                "rounded-xl p-3 text-left transition-all border min-w-0 overflow-hidden",
                 active
                   ? "border-accent bg-accent/10"
                   : "border-border-soft bg-elev2 hover:bg-elev2/70",
@@ -682,15 +691,15 @@ function ModePicker({ onPick }: { onPick: (id: TimerMode) => void }) {
               <div className="flex items-center gap-2">
                 <div
                   className={cn(
-                    "h-7 w-7 rounded-lg grid place-items-center",
+                    "h-7 w-7 rounded-lg grid place-items-center shrink-0",
                     active ? "bg-accent text-black" : "bg-elev1 text-fg-muted",
                   )}
                 >
                   {m.icon}
                 </div>
-                <div className="text-sm font-medium">{m.label}</div>
+                <div className="text-sm font-medium truncate min-w-0">{m.label}</div>
               </div>
-              <div className="text-xs text-fg-muted mt-1.5">
+              <div className="text-xs text-fg-muted mt-1.5 break-words leading-snug">
                 {m.description}
               </div>
             </button>
