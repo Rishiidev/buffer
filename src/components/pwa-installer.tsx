@@ -33,12 +33,6 @@ export function PwaInstaller() {
   // the install banner over the nav or onboarding CTAs.
   if (pathname && HIDE_ON.has(pathname)) return null;
   if (!evt || dismissed) return null;
-  // We keep it simple: only show on pages without bottom nav (onboarding, settings, etc)
-  // Actually the bottom nav is hidden on onboarding, but shows on /, /timer, /history
-  // So we only show the banner when bottom nav is NOT shown
-  const showBottomNav = !["/onboarding"].includes(pathname);
-  if (showBottomNav) return null;
-  if (!evt || dismissed) return null;
 
   const install = async () => {
     await evt.prompt();
