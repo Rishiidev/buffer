@@ -10,12 +10,15 @@ import { toast } from "sonner";
 import { haptic } from "@/lib/haptics";
 import { seedSampleData } from "@/lib/seed-sample";
 
+// Default sample subjects sum to totalHours (default 400) so the dashboard
+// math doesn't drift on first install. Adjusting totalHours on Step 1
+// redistributes proportionally (see finish()).
 const SAMPLE_SUBJECTS = [
-  { name: "Financial Reporting", estimatedHours: 90, color: "#ff6b35" },
-  { name: "Audit", estimatedHours: 80, color: "#60a5fa" },
-  { name: "Direct Tax", estimatedHours: 75, color: "#34d399" },
-  { name: "Indirect Tax", estimatedHours: 65, color: "#fbbf24" },
-  { name: "AFM", estimatedHours: 70, color: "#a78bfa" },
+  { name: "Financial Reporting", estimatedHours: 100, color: "#ff6b35" },
+  { name: "Audit", estimatedHours: 90, color: "#60a5fa" },
+  { name: "Direct Tax", estimatedHours: 80, color: "#34d399" },
+  { name: "Indirect Tax", estimatedHours: 70, color: "#fbbf24" },
+  { name: "AFM", estimatedHours: 60, color: "#a78bfa" },
 ];
 
 export default function Onboarding() {
@@ -47,6 +50,29 @@ export default function Onboarding() {
 
   const finish = async () => {
     if (busy) return;
+    // Guard against zero/empty values that would otherwise break the
+    // dashboard math ("0h of runway", div-by-zero on the engine).
+    if (!examName.trim()) {
+      toast.error("Add an exam name to continue.");
+      return;
+    }
+    if (totalHours < 1) {
+      toast.error("Total hours must be at least 1.");
+      return;
+    }
+    if (dailyCapacity < 1 || dailyCapacity > 16) {
+      toast.error("Hours per day must be between 1 and 16.");
+      return;
+    }
+    if (!examDate) {
+      toast.error("Pick an exam date.");
+      return;
+    }
+    const validSubjects = subjects.filter((s) => s.name.trim());
+    if (validSubjects.length === 0) {
+      toast.error("Add at least one subject.");
+      return;
+    }
     setBusy(true);
     try {
       const { addExam, addSubject, updateSettings } = useDataStore.getState();
@@ -56,12 +82,11 @@ export default function Onboarding() {
         totalRequiredHours: totalHours,
         dailyCapacityHours: dailyCapacity,
       });
-      for (const s of subjects) {
-        if (!s.name.trim()) continue;
+      for (const s of validSubjects) {
         await addSubject({
           examId: exam.id,
           name: s.name.trim(),
-          estimatedHours: s.estimatedHours,
+          estimatedHours: Math.max(1, Number(s.estimatedHours) || 1),
           color: s.color,
         });
       }
@@ -90,7 +115,7 @@ export default function Onboarding() {
           </div>
           <span className="text-lg font-semibold tracking-tight">Buffer</span>
         </div>
-        <div className="flex gap-1">
+        <div className="flex gap-1" aria-label={`Step ${step + 1} of 4`}>
           {[0, 1, 2, 3].map((i) => (
             <div
               key={i}
@@ -159,13 +184,13 @@ export default function Onboarding() {
               transition={{ duration: 0.25 }}
             >
               <div className="text-xs uppercase tracking-widest text-accent font-medium mb-3">
-                Step 1 of 3
+                Step 1 of 4
               </div>
               <h1 className="text-display-md font-display tracking-tight">
                 What's the exam?
               </h1>
               <p className="text-fg-muted mt-2 leading-relaxed">
-                Just one exam. You can add more later.
+                Pick one exam for now. You can run multiple in future.
               </p>
 
               <div className="mt-6 space-y-4">
@@ -227,17 +252,48 @@ export default function Onboarding() {
               transition={{ duration: 0.25 }}
             >
               <div className="text-xs uppercase tracking-widest text-accent font-medium mb-3">
-                Step 2 of 3
+                Step 2 of 4
               </div>
               <h1 className="text-display-md font-display tracking-tight">
                 Subjects & hours
               </h1>
               <p className="text-fg-muted mt-2 leading-relaxed">
-                Edit the CA Final subjects or wipe and add your own.
+                Edit the CA Final subjects or wipe and add your own. The numbers
+                below should add up to {totalHours}h — your study runway.
               </p>
 
               <div className="mt-6 space-y-2">
-                {subjects.map((s, i) => (
+                {(() => {
+                  const sum = subjects.reduce(
+                    (acc, x) => acc + (Number(x.estimatedHours) || 0),
+                    0,
+                  );
+                  const drift = totalHours - sum;
+                  return (
+                    <>
+                      <div className="flex items-center justify-between text-xs px-1 mb-1">
+                        <span className="text-fg-muted">
+                          Total budget
+                        </span>
+                        <span
+                          className={
+                            drift === 0
+                              ? "text-good num font-medium"
+                              : Math.abs(drift) <= totalHours * 0.1
+                                ? "text-warn num font-medium"
+                                : "text-bad num font-medium"
+                          }
+                        >
+                          {sum}h
+                          {drift !== 0 && (
+                            <span className="text-fg-muted ml-1">
+                              ({drift > 0 ? "−" : "+"}
+                              {Math.abs(drift)}h vs {totalHours}h)
+                            </span>
+                          )}
+                        </span>
+                      </div>
+                      {subjects.map((s, i) => (
                   <div
                     key={i}
                     className="card p-3 space-y-2"
@@ -246,8 +302,13 @@ export default function Onboarding() {
                       <div
                         className="h-8 w-1.5 rounded-full shrink-0"
                         style={{ background: s.color }}
+                        aria-hidden="true"
                       />
+                      <label className="sr-only" htmlFor={`onb-sub-${i}`}>
+                        Subject name
+                      </label>
                       <input
+                        id={`onb-sub-${i}`}
                         className="bg-transparent flex-1 min-w-0 outline-none text-fg font-medium"
                         value={s.name}
                         placeholder="Subject name"
@@ -263,10 +324,13 @@ export default function Onboarding() {
                         <button
                           onClick={() => {
                             haptic("warning");
-                            setSubjects((prev) => prev.filter((_, j) => j !== i));
+                            setSubjects((prev) =>
+                              prev.filter((_, j) => j !== i),
+                            );
                           }}
                           className="shrink-0 h-9 w-9 rounded-full bg-elev2 text-fg-muted hover:bg-bad/15 hover:text-bad active:scale-95 transition-all grid place-items-center"
                           aria-label={`Remove ${s.name || "subject"}`}
+                          type="button"
                         >
                           <X className="h-4 w-4" />
                         </button>
@@ -274,7 +338,11 @@ export default function Onboarding() {
                     </div>
                     <div className="flex items-center gap-2 pl-3.5">
                       <span className="text-xs text-fg-faint">Budget</span>
+                      <label className="sr-only" htmlFor={`onb-sub-h-${i}`}>
+                        Budget hours for {s.name || "this subject"}
+                      </label>
                       <input
+                        id={`onb-sub-h-${i}`}
                         type="number"
                         min={1}
                         className="bg-elev2 w-20 text-right rounded-lg px-2.5 py-1.5 text-sm num outline-none"
@@ -283,7 +351,10 @@ export default function Onboarding() {
                           setSubjects((prev) =>
                             prev.map((p, j) =>
                               j === i
-                                ? { ...p, estimatedHours: Number(e.target.value) }
+                                ? {
+                                    ...p,
+                                    estimatedHours: Number(e.target.value),
+                                  }
                                 : p,
                             ),
                           )
@@ -292,18 +363,22 @@ export default function Onboarding() {
                       <span className="text-fg-muted text-xs">hours</span>
                     </div>
                   </div>
-                ))}
-                <button
-                  onClick={() =>
-                    setSubjects((prev) => [
-                      ...prev,
-                      { name: "", estimatedHours: 60, color: "#a78bfa" },
-                    ])
-                  }
-                  className="btn-outline w-full mt-2"
-                >
-                  + Add subject
-                </button>
+                  ))}
+                      <button
+                        onClick={() =>
+                          setSubjects((prev) => [
+                            ...prev,
+                            { name: "", estimatedHours: 60, color: "#a78bfa" },
+                          ])
+                        }
+                        className="btn-outline w-full mt-2"
+                        type="button"
+                      >
+                        + Add subject
+                      </button>
+                    </>
+                  );
+                })()}
               </div>
             </motion.div>
           )}
@@ -330,6 +405,9 @@ export default function Onboarding() {
 
               <button
                 type="button"
+                role="switch"
+                aria-checked={loadSample}
+                aria-label="Fill with 14 days of sample data"
                 onClick={() => {
                   haptic("selection");
                   setLoadSample((v) => !v);
@@ -342,6 +420,7 @@ export default function Onboarding() {
                       ? "bg-accent text-black"
                       : "bg-elev2 text-fg-faint"
                   }`}
+                  aria-hidden="true"
                 >
                   {loadSample && <Check className="h-4 w-4" />}
                 </div>

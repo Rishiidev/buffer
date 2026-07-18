@@ -17,7 +17,9 @@ interface SheetProps {
 
 /**
  * iOS-style bottom sheet.
- * - Drag handle at top
+ * - Drag handle at top (only the handle is draggable, not the whole sheet
+ *   body — this prevents inner buttons from being swallowed by the
+ *   drag/click conflict that previously left the subject picker stuck open).
  * - Drag down to dismiss (rubber-band on small overscroll)
  * - Snap to fully open or fully closed
  * - Spring physics tuned to iOS feel
@@ -43,7 +45,7 @@ export function Sheet({
     };
   }, [open]);
 
-  const handleDragEnd = (_: unknown, info: PanInfo) => {
+  const handleDragEnd = (_e: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     const shouldClose =
       info.offset.y > 120 || (info.offset.y > 40 && info.velocity.y > 500);
     if (shouldClose && dismissible) {
@@ -63,15 +65,12 @@ export function Sheet({
         style={{ opacity }}
         onClick={onClose}
         className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
+        aria-hidden="true"
       />
       <motion.div
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        drag={dismissible ? "y" : false}
-        dragConstraints={{ top: 0, bottom: 0 }}
-        dragElastic={{ top: 0, bottom: 0.6 }}
-        onDragEnd={handleDragEnd}
         style={{ y }}
         initial={{ y: "100%" }}
         animate={{ y: open ? 0 : "100%" }}
@@ -82,16 +81,26 @@ export function Sheet({
           stiffness: 320,
           mass: 0.9,
         }}
-        className="fixed inset-x-0 bottom-0 z-50 bg-elev1 rounded-t-3xl border-t border-border-soft max-h-[88vh] overflow-y-auto safe-bottom touch-none"
+        className="fixed inset-x-0 bottom-0 z-50 bg-elev1 rounded-t-3xl border-t border-border-soft max-h-[88vh] overflow-y-auto safe-bottom"
       >
-        <div className="sticky top-0 bg-elev1/95 backdrop-blur-md pt-3 pb-2 z-10">
+        <motion.div
+          className="sticky top-0 bg-elev1/95 backdrop-blur-md pt-3 pb-2 z-10"
+          drag={dismissible ? "y" : false}
+          dragConstraints={{ top: 0, bottom: 0 }}
+          dragElastic={{ top: 0, bottom: 0.6 }}
+          onDragEnd={handleDragEnd}
+          style={{
+            cursor: dismissible ? "grab" : "default",
+            touchAction: dismissible ? "pan-y" : "auto",
+          }}
+        >
           <div className="w-10 h-1 bg-border rounded-full mx-auto" />
           {title && (
             <div className="text-lg font-display font-semibold tracking-tight mt-3 px-5">
               {title}
             </div>
           )}
-        </div>
+        </motion.div>
         <div className="px-5 pb-8">{children}</div>
       </motion.div>
     </>

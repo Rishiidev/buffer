@@ -15,6 +15,7 @@
 
 import { useEffect } from "react";
 import { create } from "zustand";
+import { shallow } from "zustand/shallow";
 import { liveQuery } from "dexie";
 import { getDb, ensureSettings } from "@/lib/db";
 import type { Exam, Session, Settings, Subject } from "@/lib/db/schema";
@@ -143,7 +144,8 @@ export function DataHydrator() {
 
 /**
  * Selector helpers — pick exactly the data you need so you only re-render
- * when *that* data changes.
+ * when *that* data changes. Selectors that return new arrays each call
+ * (filter/map) use shallow equality so they don't churn every render.
  */
 export const useData = useDataStore;
 
@@ -151,15 +153,25 @@ export function useActiveExam() {
   return useDataStore((s) => s.exams[0] ?? null);
 }
 
+/**
+ * useShallow: opt-in shallow equality comparator for Zustand selectors that
+ * produce derived arrays/objects. Without it, every selector call would
+ * produce a new array reference and re-render the consumer every time
+ * the store changes anywhere — the original cause of dashboard jitter
+ * during live session saves.
+ */
+const useShallow = <T,>(selector: (s: DataState) => T) =>
+  useDataStore(selector, shallow);
+
 export function useExamSessions() {
-  return useDataStore((s) => {
+  return useShallow((s) => {
     const exam = s.exams[0];
     return exam ? s.sessions.filter((x) => x.examId === exam.id) : [];
   });
 }
 
 export function useActiveSubjects() {
-  return useDataStore((s) => {
+  return useShallow((s) => {
     const exam = s.exams[0];
     return exam ? s.subjects.filter((x) => x.examId === exam.id) : [];
   });

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { Download, X } from "lucide-react";
 
 interface BeforeInstallPromptEvent extends Event {
@@ -8,7 +9,10 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
 
+const HIDE_ON = new Set<string>(["/onboarding"]);
+
 export function PwaInstaller() {
+  const pathname = usePathname();
   const [evt, setEvt] = useState<BeforeInstallPromptEvent | null>(null);
   const [dismissed, setDismissed] = useState(false);
 
@@ -24,6 +28,9 @@ export function PwaInstaller() {
     return () => window.removeEventListener("beforeinstallprompt", handler);
   }, []);
 
+  // Hide on routes that have their own persistent fixed bottom CTAs to
+  // avoid visually stacking the install banner over onboarding / modals.
+  if (pathname && HIDE_ON.has(pathname)) return null;
   if (!evt || dismissed) return null;
 
   const install = async () => {
