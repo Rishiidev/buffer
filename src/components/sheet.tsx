@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useMotionValue, useTransform, PanInfo } from "framer-motion";
+import { motion, useMotionValue, useTransform, PanInfo, AnimatePresence } from "framer-motion";
 import { useEffect, type ReactNode } from "react";
 
 interface SheetProps {
@@ -67,46 +67,53 @@ export function Sheet({
         className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
         aria-hidden="true"
       />
-      <motion.div
-        role="dialog"
-        aria-modal="true"
-        aria-label={title}
-        style={{ y }}
-        initial={{ y: "100%" }}
-        animate={{ y: open ? 0 : "100%" }}
-        exit={{ y: "100%" }}
-        transition={{
-          type: "spring",
-          damping: 32,
-          stiffness: 320,
-          mass: 0.9,
-        }}
-        className="fixed inset-x-0 bottom-0 z-50 bg-elev1 rounded-t-3xl border-t border-border-soft max-h-[88vh] overflow-y-auto safe-bottom"
-      >
-        {/* Header: drag handle ONLY on the small bar at the top.
-            The title area below is NOT draggable — this prevents the drag
-            handler from intercepting taps on inner buttons. */}
-        <div className="sticky top-0 bg-elev1/95 backdrop-blur-md pt-3 pb-2 z-10 flex flex-col">
-          {/* Small drag handle — only this element is draggable */}
+      <AnimatePresence>
+        {open && (
           <motion.div
-            className="w-10 h-1 bg-border rounded-full mx-auto mb-2"
-            drag={dismissible ? "y" : false}
-            dragConstraints={{ top: 0, bottom: 0 }}
-            dragElastic={{ top: 0, bottom: 0.6 }}
-            onDragEnd={handleDragEnd}
-            style={{
-              cursor: dismissible ? "grab" : "default",
-              touchAction: dismissible ? "pan-y" : "auto",
+            role="dialog"
+            aria-modal="true"
+            aria-label={title}
+            style={{ y }}
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "100%" }}
+            transition={{
+              type: "spring",
+              damping: 32,
+              stiffness: 320,
+              mass: 0.9,
             }}
-          />
-          {title && (
-            <div className="text-lg font-display font-semibold tracking-tight mt-1 px-5 mb-2 pointer-events-none">
-              {title}
+            className="fixed inset-x-0 bottom-0 z-50 bg-elev1 rounded-t-3xl border-t border-border-soft max-h-[88vh] overflow-y-auto safe-bottom"
+          >
+            {/* Header: drag handle ONLY on the small bar at the top.
+                The title area below is NOT draggable — this prevents the drag
+                handler from intercepting taps on inner buttons. */}
+            <div className="sticky top-0 bg-elev1/95 backdrop-blur-md pt-3 pb-2 z-10 flex flex-col pointer-events-auto">
+              {/* Small drag handle — only this element is draggable.
+                  Use onTap to consume tap so it doesn't bubble. */}
+              <motion.div
+                className="w-10 h-1 bg-border rounded-full mx-auto mb-2"
+                drag={dismissible ? "y" : false}
+                dragConstraints={{ top: 0, bottom: 0 }}
+                dragElastic={{ top: 0, bottom: 0.6 }}
+                dragMomentum={false}
+                onDragEnd={handleDragEnd}
+                onTap={() => {}} // Consume tap on handle so it doesn't bubble
+                style={{
+                  cursor: dismissible ? "grab" : "default",
+                  touchAction: dismissible ? "pan-y" : "auto",
+                }}
+              />
+              {title && (
+                <div className="text-lg font-display font-semibold tracking-tight mt-1 px-5 mb-2 pointer-events-auto">
+                  {title}
+                </div>
+              )}
             </div>
-          )}
-        </div>
-        <div className="px-5 pb-8">{children}</div>
-      </motion.div>
+            <div className="px-5 pb-8">{children}</div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 }
