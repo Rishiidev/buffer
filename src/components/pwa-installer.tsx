@@ -31,6 +31,12 @@ export function PwaInstaller() {
   // Hide on routes that have their own persistent fixed bottom CTAs to
   // avoid visually stacking the install banner over onboarding / modals.
   if (pathname && HIDE_ON.has(pathname)) return null;
+  // Also hide if bottom nav is visible (it has its own install affordance via OS)
+  // We keep it simple: only show on pages without bottom nav (onboarding, settings, etc)
+  // Actually the bottom nav is hidden on onboarding, but shows on /, /timer, /history
+  // So we only show the banner when bottom nav is NOT shown
+  const showBottomNav = !["/onboarding"].includes(pathname);
+  if (showBottomNav) return null;
   if (!evt || dismissed) return null;
 
   const install = async () => {

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
-import { LayoutDashboard, Timer, History, Settings as Cog } from "lucide-react";
+import { LayoutDashboard, Timer, History, Settings as Cog, Download } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const TABS = [
@@ -52,7 +52,7 @@ export function BottomNav() {
                     />
                   )}
                   <Icon className="relative h-5 w-5" strokeWidth={1.75} />
-                  <span className="relative text-[10px] font-medium tracking-tight">
+                  <span className="relative text-[11px] font-medium tracking-tight">
                     {tab.label}
                   </span>
                 </Link>
